@@ -6,7 +6,7 @@
       <input type="email" [(ngModel)]="miLogin.mail" name="mail" placeholder="Email" required>
       <input type="password" [(ngModel)]="miLogin.contra" name="contra" placeholder="Contraseña" required>
 
-      <button type="submit">Ingresar</button>
+      <button type="submit" [disabled]="cargando">{{ cargando ? "Ingresando..." : "Ingresar" }}</button>
     </form>
 
     <p>¿No tenés cuenta? <a routerLink="/registro">Registrarse</a></p>

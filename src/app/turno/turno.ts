@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
-import { Router, RouterLink } from "@angular/router"; 
+import { Router } from "@angular/router"; 
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../services/auth.service';
 
 // Solo lunes a viernes
 function diaHabil(control: AbstractControl): ValidationErrors | null {
@@ -14,7 +15,7 @@ function diaHabil(control: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-turnos',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule], 
+  imports: [CommonModule, ReactiveFormsModule], 
   templateUrl: './turno.html',
   styleUrls: ['./turno.css']
 })
@@ -27,7 +28,7 @@ export class Turno implements OnInit {
   fechaMin = '';
   fechaMax = '';
 
-  constructor(private fb: FormBuilder, private router: Router) {}
+  constructor(private fb: FormBuilder, private router: Router, private auth: AuthService) {}
 
   ngOnInit(): void {
     const hoy = new Date();
@@ -110,8 +111,7 @@ export class Turno implements OnInit {
   }
 
   guardarEnLocalStorage(nuevoTurnoObjeto: any) {
-    const usuario = localStorage.getItem('usuario');
-    const key = `turnos_${usuario}`;
+    const key = `turnos_${this.auth.email()}`;
     const datosLocales = localStorage.getItem(key);
     let listaTurnos: any[] = datosLocales ? JSON.parse(datosLocales) : [];
 

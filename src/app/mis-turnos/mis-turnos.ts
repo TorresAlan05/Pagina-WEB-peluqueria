@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router'; 
 import { FormsModule } from '@angular/forms'; 
+import { AuthService } from '../services/auth.service';
 
 interface Turno {
   nombre: string;
@@ -25,7 +26,7 @@ interface Turno {
 export class MisTurnos implements OnInit {
   listaTurnos: Turno[] = [];
   
-  constructor(private router: Router) {} 
+  constructor(private router: Router, private auth: AuthService) {} 
 
   indiceEditando: number = -1; 
   turnoEditado: Partial<Turno> = {};
@@ -40,14 +41,11 @@ export class MisTurnos implements OnInit {
 
   // Helper para obtener la llave dinámica del usuario logueado
   private getStorageKey(): string {
-    const usuario = localStorage.getItem('usuario');
-    return `turnos_${usuario}`;
+    return `turnos_${this.auth.email()}`;
   }
 
   ngOnInit(): void {
-    const usuarioLogueado = localStorage.getItem('usuario');
-    
-    if (!usuarioLogueado || usuarioLogueado === 'null' || usuarioLogueado === 'undefined') {
+    if (!this.auth.user()) {
       alert('Debes iniciar sesión para ver tus turnos.');
       this.router.navigate(['/login']);
       return; 
@@ -60,14 +58,9 @@ this.fechaMax = this.aFormatoFecha(limite);
     this.cargarTurnos();
   }
 
-cerrarSesion(): void {
+async cerrarSesion(): Promise<void> {
   if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-    // BORRAMOS SOLO LA LLAVE DE SESIÓN
-    localStorage.removeItem('usuario'); 
-    
-    // NUNCA toques 'usuarios' (tu lista de registrados) 
-    // ni otras llaves que no sean la del usuario actual.
-    
+    await this.auth.logout();
     this.router.navigate(['/login']);
   }
 }

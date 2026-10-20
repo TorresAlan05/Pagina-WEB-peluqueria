@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -8,12 +9,9 @@ import { Router, RouterLink } from '@angular/router';
   styleUrl: './navbar.css'
 })
 export class Navbar {
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
   reservarTurno() {
-    const usuario = localStorage.getItem('usuario');
-    const haySesion = usuario && usuario !== 'null' && usuario !== 'undefined';
-
-    this.router.navigateByUrl(haySesion ? '/turno' : '/registro');
+    this.router.navigateByUrl(this.auth.user() ? '/turno' : '/registro');
   }
 }

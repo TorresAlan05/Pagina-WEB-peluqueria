@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../services/auth.service';
 
 interface Turno {
   nombre: string;
@@ -23,10 +24,11 @@ interface Turno {
 export class Admin implements OnInit { 
   listaTurnos: Turno[] = [];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
-  ngOnInit() {
-    if (localStorage.getItem('rol') !== 'admin') {
+  async ngOnInit() {
+    await this.auth.ready;
+    if (!this.auth.isAdmin()) {
       this.router.navigateByUrl('login');
       return;
     }
@@ -73,9 +75,8 @@ export class Admin implements OnInit {
     }
   }
 
-  cerrarSesion() {
-    localStorage.removeItem('rol');
-    localStorage.removeItem('usuario');
+  async cerrarSesion() {
+    await this.auth.logout();
     this.router.navigateByUrl('login');
   }
 }

@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { Registros } from '../templates/templates';
-import { Router, RouterLink } from "@angular/router";
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -11,48 +12,33 @@ import { FormsModule } from '@angular/forms';
 })
 export class Login {
   miLogin: Registros;
+  cargando = false;
 
-  constructor(public router: Router) {
+  constructor(public router: Router, private auth: AuthService) {
     this.miLogin = new Registros();
   }
 
-  login() {
-   
-    if (this.miLogin.mail === 'admin@peluqueria.com' && this.miLogin.contra === '123456') {
-      localStorage.setItem('rol', 'admin');
-      localStorage.setItem('usuario', this.miLogin.mail); 
-      this.router.navigateByUrl("admin-dashboard");
-      return; 
-    }
+  async login() {
+    if (this.cargando) return;
+    this.cargando = true;
 
-   
-    const datosGuardados = localStorage.getItem("usuarios_registrados");
-    
-    if (!datosGuardados) {
-      alert("No hay ningún usuario registrado.");
+    try {
+      await this.auth.login(this.miLogin.mail.trim(), this.miLogin.contra);
+    } catch (e) {
+      alert(this.auth.traducirError(e));
+      this.cargando = false;
+      return;
+    }
+    this.cargando = false;
+
+    if (this.auth.isAdmin()) {
+      this.router.navigateByUrl('admin-dashboard');
       return;
     }
 
-    const listaUsuarios: Registros[] = JSON.parse(datosGuardados);
-
-    
-    const usuarioEncontrado = listaUsuarios.find(u => 
-      u.mail === this.miLogin.mail && u.contra === this.miLogin.contra
-    );
-
-    if (usuarioEncontrado) {
-      
-      console.log("Login exitoso");
-      
-    
-      localStorage.setItem('usuario', usuarioEncontrado.mail); 
-      localStorage.setItem('rol', 'cliente');
-      
-      const turnosGuardados = localStorage.getItem(`turnos_${usuarioEncontrado.mail}`);
-      const listaTurnos = turnosGuardados ? JSON.parse(turnosGuardados) : [];
-      this.router.navigateByUrl(listaTurnos.length > 0 ? "mis-turnos" : "turno"); 
-    } else {
-      alert("Datos incorrectos o usuario no registrado.");
-    }
-  } 
+    // Cliente: si ya tiene turnos va a verlos, si no a reservar uno
+    const turnosGuardados = localStorage.getItem(`turnos_${this.auth.email()}`);
+    const listaTurnos = turnosGuardados ? JSON.parse(turnosGuardados) : [];
+    this.router.navigateByUrl(listaTurnos.length > 0 ? 'mis-turnos' : 'turno');
+  }
 }

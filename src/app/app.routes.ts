@@ -1,32 +1,20 @@
-import { Routes, Router } from '@angular/router';
-import { inject } from '@angular/core';
+import { Routes } from '@angular/router';
 import { Registro } from './registro/registro';
 import { Login } from './login/login';
 import { Home } from './home/home';
-import { Admin } from './admin/admin'; 
+import { Admin } from './admin/admin';
 import { Turno } from './turno/turno';
 import { MisTurnos } from './mis-turnos/mis-turnos';
+import { roleGuard } from './guards/auth.guard';
+
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'home', pathMatch: 'full' }, 
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: Home },
   { path: 'login', component: Login },
   { path: 'registro', component: Registro },
-  { path: 'admin-dashboard', component: Admin }, 
-  { 
-    path: 'mis-turnos', 
-    component: MisTurnos,
-    canActivate: [() => {
-      const router = inject(Router);
-      return localStorage.getItem('usuario') ? true : router.createUrlTree(['/login']);
-    }]
-  },
-  { path: 'turno',
-    component: Turno,
-    canActivate: [() => {
-    const router = inject(Router);
-    return localStorage.getItem('usuario') ? true : router.createUrlTree(['/login']);
-  }]
-}, 
-  { path: '**', redirectTo: 'home', pathMatch: 'full' } 
+    { path: 'admin-dashboard', component: Admin, canActivate: [roleGuard(['admin'])] },
+  { path: 'mis-turnos', component: MisTurnos, canActivate: [roleGuard(['cliente'])] },
+  { path: 'turno', component: Turno, canActivate: [roleGuard(['cliente'])] },
+  { path: '**', redirectTo: 'home', pathMatch: 'full' }
 ];

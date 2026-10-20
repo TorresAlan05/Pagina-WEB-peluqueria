@@ -7,7 +7,7 @@
   <input type="password" [(ngModel)]="miRegistro.contra" name="contra" placeholder="Contraseña" required>
   <input type="password" [(ngModel)]="miRegistro.contra2" name="contra2" placeholder="Repetir contraseña" required>
 
-  <button type="submit">Registrarse</button>
+  <button type="submit" [disabled]="cargando">{{ cargando ? "Registrando..." : "Registrarse" }}</button>
 </form>
 
     <p>¿Ya tenés cuenta? <a routerLink="/login">Iniciar sesión</a></p>
