@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from "@angular/router"; 
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth.service';
+import { TurnosService } from '../services/turnos.service';
 
 // Solo lunes a viernes
 function diaHabil(control: AbstractControl): ValidationErrors | null {
@@ -24,11 +25,17 @@ export class Turno implements OnInit {
   listaServicios: string[] = ['Corte', 'Barba', 'Corte + Barba', 'Coloración + Corte'];
   listaHoras: string[] = ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
 
-  horasOcupadas: string[] = [];
+  horasOcupadas = signal<string[]>([]);
+  enviando = signal(false);
   fechaMin = '';
   fechaMax = '';
 
-  constructor(private fb: FormBuilder, private router: Router, private auth: AuthService) {}
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private auth: AuthService,
+    private turnosSvc: TurnosService
+  ) {}
 
   ngOnInit(): void {
     const hoy = new Date();
@@ -48,9 +55,9 @@ export class Turno implements OnInit {
     });
 
     // Cada vez que cambia la fecha, recalculamos qué horas están ocupadas
-    this.formTurno.get('dia')!.valueChanges.subscribe(fecha => {
+    this.formTurno.get('dia')!.valueChanges.subscribe(async fecha => {
       this.formTurno.get('hora')!.setValue('');
-      this.horasOcupadas = this.obtenerHorasOcupadas(fecha);
+      this.horasOcupadas.set(await this.obtenerHorasOcupadas(fecha));
     });
   }
 
@@ -62,26 +69,20 @@ export class Turno implements OnInit {
     return `${y}-${m}-${d}`;
   }
 
-  // Junta los turnos de TODOS los usuarios para esa fecha
-  private obtenerHorasOcupadas(fecha: string): string[] {
+  // Horas ya reservadas por cualquier cliente en esa fecha
+  private async obtenerHorasOcupadas(fecha: string): Promise<string[]> {
     if (!fecha) return [];
-    const ocupadas: string[] = [];
-
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('turnos_')) {
-        const turnos = JSON.parse(localStorage.getItem(key) || '[]');
-        turnos.forEach((t: any) => {
-          if (t.dia === fecha) ocupadas.push(t.hora);
-        });
-      }
+    try {
+      return (await this.turnosSvc.horasOcupadas(fecha)).map(o => o.hora);
+    } catch (e) {
+      console.error('No se pudieron consultar los horarios:', e);
+      return [];
     }
-    return ocupadas;
   }
 
   // Ocupada, o ya pasó si la fecha elegida es hoy
   horaNoDisponible(hora: string): boolean {
-    if (this.horasOcupadas.includes(hora)) return true;
+    if (this.horasOcupadas().includes(hora)) return true;
 
     const fecha = this.formTurno.get('dia')?.value;
     if (fecha === this.fechaMin) {
@@ -93,30 +94,50 @@ export class Turno implements OnInit {
     return false;
   }
 
-  onSubmit(): void {
-    if (this.formTurno.invalid) return;
+  async onSubmit(): Promise<void> {
+    if (this.formTurno.invalid || this.enviando()) return;
 
-    const { dia, hora } = this.formTurno.value;
-
-    // Volvemos a chequear justo antes de guardar
-    if (this.obtenerHorasOcupadas(dia).includes(hora)) {
-      alert('Ese horario ya fue reservado. Elegí otro, por favor.');
-      this.horasOcupadas = this.obtenerHorasOcupadas(dia);
-      this.formTurno.get('hora')!.setValue('');
+    const user = this.auth.user();
+    if (!user) {
+      this.router.navigate(['/login']);
       return;
     }
 
-    this.guardarEnLocalStorage(this.formTurno.value); 
-    this.router.navigate(['/mis-turnos']); 
+    const { nombre, apellido, servicio, dia, hora, observaciones } = this.formTurno.value;
+    this.enviando.set(true);
+
+    try {
+      // Volvemos a chequear justo antes de guardar
+      const ocupadas = await this.obtenerHorasOcupadas(dia);
+      if (ocupadas.includes(hora)) {
+        this.horaTomada(ocupadas);
+        return;
+      }
+
+      await this.turnosSvc.crear({
+        uid: user.uid,
+        mail: user.email ?? '',
+        nombre: nombre.trim(),
+        apellido: apellido.trim(),
+        servicio,
+        dia,
+        hora,
+        observaciones: (observaciones ?? '').trim()
+      });
+      alert('¡Turno agendado con éxito!');
+      this.router.navigate(['/mis-turnos']);
+    } catch (e) {
+      console.error(e);
+      // Si dos personas reservan a la vez, las reglas rechazan al segundo
+      this.horaTomada(await this.obtenerHorasOcupadas(dia));
+    } finally {
+      this.enviando.set(false);
+    }
   }
 
-  guardarEnLocalStorage(nuevoTurnoObjeto: any) {
-    const key = `turnos_${this.auth.email()}`;
-    const datosLocales = localStorage.getItem(key);
-    let listaTurnos: any[] = datosLocales ? JSON.parse(datosLocales) : [];
-
-    listaTurnos.push(nuevoTurnoObjeto);
-    localStorage.setItem(key, JSON.stringify(listaTurnos, null, 2));
-    alert(`¡Turno agendado con éxito!`);
+  private horaTomada(ocupadas: string[]): void {
+    alert('No se pudo reservar: ese horario ya fue tomado. Elegí otro, por favor.');
+    this.horasOcupadas.set(ocupadas);
+    this.formTurno.get('hora')!.setValue('');
   }
 }

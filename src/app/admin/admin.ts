@@ -1,30 +1,27 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth.service';
-
-interface Turno {
-  nombre: string;
-  apellido: string;
-  mail: string;
-  servicio: string;
-  fecha: string;
-  dia: string;
-  hora: string;
-  estado: 'Confirmado' | 'Pendiente';
-}
+import { ESTADOS, EstadoTurno, Turno, TurnosService } from '../services/turnos.service';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule], 
-  templateUrl: './admin.html',  
-  styleUrl: './admin.css'        
+  imports: [],
+  templateUrl: './admin.html',
+  styleUrl: './admin.css'
 })
-export class Admin implements OnInit { 
-  listaTurnos: Turno[] = [];
+export class Admin implements OnInit {
+  private router = inject(Router);
+  private auth = inject(AuthService);
+  private turnosSvc = inject(TurnosService);
 
-  constructor(private router: Router, private auth: AuthService) {}
+  readonly estados = ESTADOS;
+
+  listaTurnos = signal<Turno[]>([]);
+  cargando = signal(true);
+  error = signal('');
+  /** id del turno que se está modificando (para deshabilitar sus controles) */
+  procesando = signal<string | null>(null);
 
   async ngOnInit() {
     await this.auth.ready;
@@ -32,47 +29,69 @@ export class Admin implements OnInit {
       this.router.navigateByUrl('login');
       return;
     }
-    this.cargarTurnos();
+    await this.cargarTurnos();
   }
 
-  cargarTurnos(): void {
-    this.listaTurnos = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('turnos_')) {
-        const datos = localStorage.getItem(key);
-        if (datos) {
-          try {
-            const turnosUsuario = JSON.parse(datos);
-            this.listaTurnos.push(...turnosUsuario);
-          } catch (e) {
-            console.error("Error al parsear datos de: " + key);
-          }
-        }
-      }
+  async cargarTurnos(): Promise<void> {
+    this.cargando.set(true);
+    this.error.set('');
+    try {
+      this.listaTurnos.set(await this.turnosSvc.listarTodos());
+    } catch (e) {
+      console.error('No se pudieron cargar los turnos:', e);
+      this.error.set('No se pudieron cargar los turnos. Revisá las reglas de Firestore y tu conexión.');
+    } finally {
+      this.cargando.set(false);
     }
   }
 
-  eliminarTurno(mailCliente: string, hora: string, dia: string) {
-    const key = `turnos_${mailCliente}`;
-    const datos = localStorage.getItem(key);
-    
-    if (datos) {
-      let turnos: Turno[] = JSON.parse(datos);
-      
-      // Filtrar: mantenemos todos los que NO coincidan exactamente
-      const antes = turnos.length;
-      turnos = turnos.filter(t => !(t.hora === hora && t.dia === dia));
-      
-      if (turnos.length < antes) {
-        if (turnos.length > 0) {
-          localStorage.setItem(key, JSON.stringify(turnos));
-        } else {
-          localStorage.removeItem(key);
-        }
-        this.cargarTurnos(); // Recargamos la vista
-      }
+  async cambiarEstado(turno: Turno, valor: string): Promise<void> {
+    const nuevo = valor as EstadoTurno;
+    if (!this.estados.includes(nuevo) || nuevo === turno.estado) return;
+
+    this.procesando.set(turno.id);
+    try {
+      await this.turnosSvc.cambiarEstado(turno.id, nuevo);
+      this.listaTurnos.update((l) => l.map((t) => (t.id === turno.id ? { ...t, estado: nuevo } : t)));
+    } catch (e) {
+      console.error(e);
+      alert('No se pudo cambiar el estado. Verificá que tu usuario tenga rol admin.');
+      // se recarga para que el selector vuelva al valor real
+      await this.cargarTurnos();
+    } finally {
+      this.procesando.set(null);
     }
+  }
+
+  async eliminarTurno(turno: Turno): Promise<void> {
+    const ok = confirm(
+      `¿Eliminar el turno de ${turno.nombre} ${turno.apellido} (${this.formatearDia(turno.dia)} ${turno.hora})?`
+    );
+    if (!ok) return;
+
+    this.procesando.set(turno.id);
+    try {
+      await this.turnosSvc.eliminar(turno);
+      this.listaTurnos.update((l) => l.filter((t) => t.id !== turno.id));
+    } catch (e) {
+      console.error(e);
+      alert('No se pudo eliminar el turno.');
+    } finally {
+      this.procesando.set(null);
+    }
+  }
+
+  /** "2026-10-20" → "20/10/2026" */
+  formatearDia(dia: string): string {
+    const [y, m, d] = dia.split('-');
+    return y && m && d ? `${d}/${m}/${y}` : dia;
+  }
+
+  /** "2026-10-20" → "Martes" */
+  nombreDia(dia: string): string {
+    const [y, m, d] = dia.split('-').map(Number);
+    if (!y || !m || !d) return '';
+    return new Date(y, m - 1, d).toLocaleDateString('es-AR', { weekday: 'long' });
   }
 
   async cerrarSesion() {

@@ -3,6 +3,7 @@ import { Registros } from '../templates/templates';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
+import { TurnosService } from '../services/turnos.service';
 
 @Component({
   selector: 'app-login',
@@ -14,7 +15,7 @@ export class Login {
   miLogin: Registros;
   cargando = false;
 
-  constructor(public router: Router, private auth: AuthService) {
+  constructor(public router: Router, private auth: AuthService, private turnosSvc: TurnosService) {
     this.miLogin = new Registros();
   }
 
@@ -37,8 +38,13 @@ export class Login {
     }
 
     // Cliente: si ya tiene turnos va a verlos, si no a reservar uno
-    const turnosGuardados = localStorage.getItem(`turnos_${this.auth.email()}`);
-    const listaTurnos = turnosGuardados ? JSON.parse(turnosGuardados) : [];
-    this.router.navigateByUrl(listaTurnos.length > 0 ? 'mis-turnos' : 'turno');
+    let tieneTurnos = false;
+    try {
+      const uid = this.auth.user()?.uid;
+      tieneTurnos = !!uid && (await this.turnosSvc.listarMios(uid)).length > 0;
+    } catch (e) {
+      console.error(e);
+    }
+    this.router.navigateByUrl(tieneTurnos ? 'mis-turnos' : 'turno');
   }
 }

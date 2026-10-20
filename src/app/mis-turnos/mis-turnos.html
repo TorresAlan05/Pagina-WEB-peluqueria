@@ -9,15 +9,15 @@
 
     <h2>Turnos Agendados</h2>
 
-    <div *ngIf="listaTurnos.length === 0" class="sin-turnos">
+    <div *ngIf="listaTurnos().length === 0" class="sin-turnos">
       <p>No hay turnos reservados por el momento.</p>
       <a routerLink="/turno" class="btn-link">Sacar un turno aquí</a>
     </div>
 
-    <div *ngIf="listaTurnos.length > 0" class="lista-turnos">
-      <div *ngFor="let turno of listaTurnos; let i = index" class="turno-item">
+    <div *ngIf="listaTurnos().length > 0" class="lista-turnos">
+      <div *ngFor="let turno of listaTurnos(); let i = index" class="turno-item">
         
-        <div *ngIf="indiceEditando === i; else vistaNormal" class="turno-edicion-form">
+        <div *ngIf="indiceEditando() === i; else vistaNormal" class="turno-edicion-form">
           <h3>Modificando turno de {{ turno.nombre }}</h3>
           
           <div class="campo-edicion">
@@ -46,7 +46,7 @@
 </div>
 
           <div class="turno-acciones">
-            <button (click)="guardarEdicion(i)" class="btn-guardar">💾 Guardar</button>
+            <button (click)="guardarEdicion(i)" [disabled]="guardando()" class="btn-guardar">💾 Guardar</button>
             <button (click)="cancelarEdicion()" class="btn-cancelar">❌ Cancelar</button>
           </div>
         </div>
@@ -55,6 +55,7 @@
           <div class="turno-info">
             <h3>{{ turno.nombre }} {{ turno.apellido }}</h3>
             <p class="servicio-tag">{{ turno.servicio }}</p>
+            <p class="obs">Estado: <strong>{{ turno.estado }}</strong></p>
             <p class="fecha-hora">📅 {{ turno.dia }} - ⏰ {{ turno.hora }} hs</p>
             <p *ngIf="turno.observaciones" class="obs">📝 <em>{{ turno.observaciones }}</em></p>
           </div>

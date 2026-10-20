@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Perfil de usuario: cada uno lee el suyo; el admin lee y modifica todos.
+    // Al registrarse solo se puede crear como 'cliente' (nadie se hace admin solo).
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && request.auth.uid == uid
+                    && request.resource.data.role == 'cliente';
+      allow update, delete: if isAdmin();
+    }
+
+    // Turnos
+    match /turnos/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+
+      // El cliente crea sus turnos, siempre como 'Pendiente' y con su propio mail
+      allow create: if signedIn()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.mail == request.auth.token.email
+                    && request.resource.data.estado == 'Pendiente';
+
+      // El admin puede todo (incluido el estado).
+      // El cliente puede editar su turno PERO NO el estado, uid ni mail.
+      allow update: if isAdmin()
+                    || (signedIn()
+                        && resource.data.uid == request.auth.uid
+                        && request.resource.data.estado == resource.data.estado
+                        && request.resource.data.uid == resource.data.uid
+                        && request.resource.data.mail == resource.data.mail);
+
+      allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+    }
+
+    // "Candados" de horario: el id (dia_hora) es único, así no se pisan reservas.
+    match /ocupados/{slot} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+                    && request.resource.data.uid == request.auth.uid
+                    && slot == request.resource.data.dia + '_' + request.resource.data.hora;
+      allow update: if false;
+      allow delete: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+  }
+}

@@ -33,31 +33,41 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-neutral-800 text-sm font-light text-neutral-300">
-            @for (turno of listaTurnos; track turno.mail + turno.dia + turno.hora) {
+            @for (turno of listaTurnos(); track turno.id) {
               <tr class="hover:bg-neutral-800/30 transition duration-200">
                 <td class="p-4">
                   <div class="font-normal text-white">{{ turno.nombre }} {{ turno.apellido }}</div>
                   <div class="text-xs text-neutral-500 font-light">{{ turno.mail }}</div>
                 </td>
-                <td class="p-4 font-light">{{ turno.servicio }}</td>
-                <td class="p-4">
-                  <div class="font-normal text-white">{{ turno.hora }}</div>
-                  <div class="text-xs text-neutral-500">{{ turno.dia }}, {{ turno.fecha }}</div>
-                </td>
-                <td class="p-4 text-center">
-                  @if (turno.estado === 'Confirmado') {
-                    <span class="px-2.5 py-1 text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">
-                      {{ turno.estado }}
-                    </span>
-                  } @else {
-                    <span class="px-2.5 py-1 text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full">
-                      {{ turno.estado }}
-                    </span>
+                <td class="p-4 font-light">
+                  {{ turno.servicio }}
+                  @if (turno.observaciones) {
+                    <div class="text-xs text-neutral-500 italic mt-1">{{ turno.observaciones }}</div>
                   }
                 </td>
+                <td class="p-4">
+                  <div class="font-normal text-white">{{ turno.hora }} hs</div>
+                  <div class="text-xs text-neutral-500 capitalize">{{ nombreDia(turno.dia) }}, {{ formatearDia(turno.dia) }}</div>
+                </td>
                 <td class="p-4 text-center">
-                  <button (click)="eliminarTurno(turno.mail, turno.hora, turno.dia)" 
-                          class="text-red-400 hover:text-red-300 underline text-xs">
+                  <select
+                    [value]="turno.estado"
+                    [disabled]="procesando() === turno.id"
+                    (change)="cambiarEstado(turno, $any($event.target).value)"
+                    class="px-2.5 py-1 text-xs font-semibold rounded-full border bg-neutral-950 cursor-pointer disabled:opacity-50"
+                    [class.text-emerald-400]="turno.estado === 'Finalizado'"
+                    [class.border-emerald-500/30]="turno.estado === 'Finalizado'"
+                    [class.text-amber-500]="turno.estado === 'Pendiente'"
+                    [class.border-amber-500/30]="turno.estado === 'Pendiente'">
+                    @for (e of estados; track e) {
+                      <option [value]="e" [selected]="e === turno.estado" class="bg-neutral-950 text-white">{{ e }}</option>
+                    }
+                  </select>
+                </td>
+                <td class="p-4 text-center">
+                  <button (click)="eliminarTurno(turno)"
+                          [disabled]="procesando() === turno.id"
+                          class="text-red-400 hover:text-red-300 underline text-xs disabled:opacity-50">
                     Eliminar
                   </button>
                 </td>
@@ -65,7 +75,13 @@
             } @empty {
               <tr>
                 <td colspan="5" class="p-8 text-center text-neutral-500 italic">
-                  No hay turnos registrados.
+                  @if (cargando()) {
+                    Cargando turnos...
+                  } @else if (error()) {
+                    <span class="text-red-400 not-italic">{{ error() }}</span>
+                  } @else {
+                    No hay turnos registrados.
+                  }
                 </td>
               </tr>
             }

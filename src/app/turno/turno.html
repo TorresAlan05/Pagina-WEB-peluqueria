@@ -29,7 +29,7 @@
       <label>Observaciones (Opcional):</label>
       <textarea formControlName="observaciones"></textarea>
 
-      <button type="submit" [disabled]="formTurno.invalid">Agendar Turno</button>
+      <button type="submit" [disabled]="formTurno.invalid || enviando()">{{ enviando() ? 'Guardando...' : 'Agendar Turno' }}</button>
       
     </form>
   </div>
