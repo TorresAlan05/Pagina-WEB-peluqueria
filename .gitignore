@@ -42,3 +42,6 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Firebase (cache de deploy, cambia en cada deploy)
+/.firebase
