@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractContro
 import { Router } from "@angular/router"; 
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth.service';
-import { TurnosService } from '../services/turnos.service';
+import { ApiError, TurnosService } from '../services/turnos.service';
 
 // Solo lunes a viernes
 function diaHabil(control: AbstractControl): ValidationErrors | null {
@@ -22,7 +22,7 @@ function diaHabil(control: AbstractControl): ValidationErrors | null {
 })
 export class Turno implements OnInit {
   formTurno!: FormGroup;
-  listaServicios: string[] = ['Corte', 'Barba', 'Corte + Barba', 'Coloración + Corte'];
+  listaServicios = signal<string[]>([]); // se carga desde la API
   listaHoras: string[] = ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
 
   horasOcupadas = signal<string[]>([]);
@@ -44,6 +44,7 @@ export class Turno implements OnInit {
 
     this.fechaMin = this.aFormatoFecha(hoy);
     this.fechaMax = this.aFormatoFecha(limite);
+    void this.cargarServicios();
 
     this.formTurno = this.fb.group({
       nombre: ['', Validators.required],
@@ -59,6 +60,15 @@ export class Turno implements OnInit {
       this.formTurno.get('hora')!.setValue('');
       this.horasOcupadas.set(await this.obtenerHorasOcupadas(fecha));
     });
+  }
+
+  private async cargarServicios(): Promise<void> {
+    try {
+      this.listaServicios.set((await this.turnosSvc.listarServicios()).map((s) => s.nombre));
+    } catch (e) {
+      console.error(e);
+      alert(e instanceof Error ? e.message : 'No se pudieron cargar los servicios.');
+    }
   }
 
   // "2026-10-05" en hora local (toISOString usa UTC y puede correr el día)
@@ -128,8 +138,12 @@ export class Turno implements OnInit {
       this.router.navigate(['/mis-turnos']);
     } catch (e) {
       console.error(e);
-      // Si dos personas reservan a la vez, las reglas rechazan al segundo
-      this.horaTomada(await this.obtenerHorasOcupadas(dia));
+      if (e instanceof ApiError && e.status === 409) {
+        // Si dos personas reservan a la vez, el servidor rechaza al segundo
+        this.horaTomada(await this.obtenerHorasOcupadas(dia));
+      } else {
+        alert(e instanceof Error ? e.message : 'No se pudo reservar el turno.');
+      }
     } finally {
       this.enviando.set(false);
     }

@@ -1,0 +1,21 @@
+<div class="p-4 border-b border-neutral-800 flex flex-col md:flex-row md:items-center gap-3">
+  <input type="text" placeholder="Buscar por nombre, mail o servicio..."
+         [value]="texto()"
+         (input)="onTexto($any($event.target).value)"
+         class="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-amber-500">
+
+  <select [value]="estado()"
+          (change)="onEstado($any($event.target).value)"
+          class="bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-300 focus:outline-none focus:border-amber-500">
+    <option value="">Todos los estados</option>
+    @for (e of estados; track e) {
+      <option [value]="e" [selected]="e === estado()">{{ e }}</option>
+    }
+  </select>
+
+  @if (hayFiltros()) {
+    <button (click)="limpiar()" class="text-xs text-neutral-400 hover:text-white underline">Limpiar</button>
+  }
+
+  <span class="text-xs text-neutral-500 md:ml-auto">Mostrando {{ mostrados() }} de {{ total() }}</span>
+</div>

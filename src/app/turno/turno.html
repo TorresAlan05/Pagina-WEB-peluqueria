@@ -10,7 +10,7 @@
 
       <select formControlName="servicio">
         <option value="" disabled selected>Seleccione un servicio</option>
-        <option *ngFor="let s of listaServicios" [value]="s">{{ s }}</option>
+        <option *ngFor="let s of listaServicios()" [value]="s">{{ s }}</option>
       </select>
    
       <label>Día:</label>

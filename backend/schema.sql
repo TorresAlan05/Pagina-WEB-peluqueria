@@ -17,13 +17,19 @@ CREATE TABLE IF NOT EXISTS turnos (
   servicio_id    INT UNSIGNED NOT NULL,
   dia            DATE         NOT NULL,
   hora           TIME         NOT NULL,
-  estado         ENUM('Pendiente','Confirmado') NOT NULL DEFAULT 'Pendiente',
+  estado         ENUM('Pendiente','Finalizado') NOT NULL DEFAULT 'Pendiente',
   observaciones  VARCHAR(500) NULL,
   creado_en      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_dia_hora (dia, hora),            -- un solo turno por horario
   KEY idx_usuario (usuario_uid),
   CONSTRAINT fk_turno_servicio FOREIGN KEY (servicio_id) REFERENCES servicios(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Migración: si la tabla se creó con la versión anterior (estado 'Confirmado'), esto la actualiza
+-- (los 'Confirmado' pasan a 'Finalizado'). Es seguro repetirla.
+ALTER TABLE turnos MODIFY estado ENUM('Pendiente','Confirmado','Finalizado') NOT NULL DEFAULT 'Pendiente';
+UPDATE turnos SET estado = 'Finalizado' WHERE estado = 'Confirmado';
+ALTER TABLE turnos MODIFY estado ENUM('Pendiente','Finalizado') NOT NULL DEFAULT 'Pendiente';
 
 -- Servicios iniciales (los mismos 4 que hoy están fijos en el front). Los precios son de ejemplo: cambialos.
 INSERT IGNORE INTO servicios (nombre, precio) VALUES

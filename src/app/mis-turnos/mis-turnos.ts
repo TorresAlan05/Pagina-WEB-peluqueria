@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
-import { Turno, TurnosService } from '../services/turnos.service';
+import { ApiError, Turno, TurnosService } from '../services/turnos.service';
 
 @Component({
   selector: 'app-mis-turnos',
@@ -22,7 +22,7 @@ export class MisTurnos implements OnInit {
 
   fechaMin = '';
   fechaMax = '';
-  listaServicios: string[] = ['Corte', 'Barba', 'Corte + Barba', 'Coloración + Corte'];
+  listaServicios = signal<string[]>([]); // se carga desde la API
   listaHoras: string[] = [
     '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
   ];
@@ -44,7 +44,16 @@ export class MisTurnos implements OnInit {
     limite.setDate(limite.getDate() + 30);
     this.fechaMin = this.aFormatoFecha(hoy);
     this.fechaMax = this.aFormatoFecha(limite);
+    void this.cargarServicios();
     await this.cargarTurnos();
+  }
+
+  private async cargarServicios(): Promise<void> {
+    try {
+      this.listaServicios.set((await this.turnosSvc.listarServicios()).map((s) => s.nombre));
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   async cerrarSesion(): Promise<void> {
@@ -61,7 +70,7 @@ export class MisTurnos implements OnInit {
       this.listaTurnos.set(await this.turnosSvc.listarMios(user.uid));
     } catch (e) {
       console.error(e);
-      alert('No se pudieron cargar tus turnos.');
+      alert(e instanceof Error ? e.message : 'No se pudieron cargar tus turnos.');
     }
   }
 
@@ -162,7 +171,11 @@ export class MisTurnos implements OnInit {
       alert('Turno modificado con éxito.');
     } catch (e) {
       console.error(e);
-      this.horaTomada(await this.obtenerHorasOcupadas(dia, index));
+      if (e instanceof ApiError && e.status === 409) {
+        this.horaTomada(await this.obtenerHorasOcupadas(dia, index));
+      } else {
+        alert(e instanceof Error ? e.message : 'No se pudo guardar el turno.');
+      }
     } finally {
       this.guardando.set(false);
     }

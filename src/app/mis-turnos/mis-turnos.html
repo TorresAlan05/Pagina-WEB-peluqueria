@@ -23,7 +23,7 @@
           <div class="campo-edicion">
             <label>Servicio:</label>
             <select [(ngModel)]="turnoEditado.servicio" class="select-edicion">
-              <option *ngFor="let s of listaServicios" [value]="s">{{ s }}</option>
+              <option *ngFor="let s of listaServicios()" [value]="s">{{ s }}</option>
             </select>
           </div>
 

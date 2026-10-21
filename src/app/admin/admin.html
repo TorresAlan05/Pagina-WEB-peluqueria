@@ -10,10 +10,16 @@
         <p class="text-neutral-500 text-sm font-light">Agenda completa.</p>
       </div>
       
-      <button (click)="cerrarSesion()" 
-              class="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white px-5 py-2.5 rounded-lg text-sm font-medium transition duration-300 self-start sm:self-center">
-        Cerrar Sesión
-      </button>
+      <div class="flex gap-3 self-start sm:self-center">
+        <a routerLink="/admin-usuarios"
+           class="bg-amber-500 hover:bg-amber-600 text-neutral-950 px-5 py-2.5 rounded-lg text-sm font-bold transition duration-300">
+          Usuarios
+        </a>
+        <button (click)="cerrarSesion()"
+                class="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white px-5 py-2.5 rounded-lg text-sm font-medium transition duration-300">
+          Cerrar Sesión
+        </button>
+      </div>
     </div>
 
     <div class="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden shadow-2xl">
@@ -21,6 +27,14 @@
         <h3 class="text-lg font-bold text-amber-400">Próximas Citas</h3>
       </div>
       
+      @let visibles = listaTurnos() | filtroTurnos: busqueda() : estadoFiltro();
+
+      <app-filtros-turnos
+        [total]="listaTurnos().length"
+        [mostrados]="visibles.length"
+        (buscar)="onBuscar($event)"
+        (estadoElegido)="onEstadoFiltro($event)" />
+
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
@@ -33,7 +47,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-neutral-800 text-sm font-light text-neutral-300">
-            @for (turno of listaTurnos(); track turno.id) {
+            @for (turno of visibles; track turno.id) {
               <tr class="hover:bg-neutral-800/30 transition duration-200">
                 <td class="p-4">
                   <div class="font-normal text-white">{{ turno.nombre }} {{ turno.apellido }}</div>
@@ -54,11 +68,8 @@
                     [value]="turno.estado"
                     [disabled]="procesando() === turno.id"
                     (change)="cambiarEstado(turno, $any($event.target).value)"
-                    class="px-2.5 py-1 text-xs font-semibold rounded-full border bg-neutral-950 cursor-pointer disabled:opacity-50"
-                    [class.text-emerald-400]="turno.estado === 'Finalizado'"
-                    [class.border-emerald-500/30]="turno.estado === 'Finalizado'"
-                    [class.text-amber-500]="turno.estado === 'Pendiente'"
-                    [class.border-amber-500/30]="turno.estado === 'Pendiente'">
+                    [appEstado]="turno.estado"
+                    class="px-2.5 py-1 text-xs font-semibold rounded-full border bg-neutral-950 cursor-pointer disabled:opacity-50">
                     @for (e of estados; track e) {
                       <option [value]="e" [selected]="e === turno.estado" class="bg-neutral-950 text-white">{{ e }}</option>
                     }
@@ -79,6 +90,8 @@
                     Cargando turnos...
                   } @else if (error()) {
                     <span class="text-red-400 not-italic">{{ error() }}</span>
+                  } @else if (listaTurnos().length > 0) {
+                    Ningún turno coincide con el filtro.
                   } @else {
                     No hay turnos registrados.
                   }

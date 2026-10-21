@@ -2,12 +2,13 @@ import { Router } from 'express';
 import { esFechaValida, idValido, textoValido, validarDiaHora } from '../validaciones.js';
 
 const SELECT = `
-  SELECT t.id, t.mail, t.nombre, t.apellido, t.servicio_id, s.nombre AS servicio, s.precio,
+  SELECT t.id, t.usuario_uid AS uid, t.mail, t.nombre, t.apellido, t.servicio_id, s.nombre AS servicio, s.precio,
          t.dia, t.hora, t.estado, t.observaciones, t.creado_en
   FROM turnos t JOIN servicios s ON s.id = t.servicio_id`;
 
 const mapTurno = (r) => ({
   id: r.id,
+  uid: r.uid,
   mail: r.mail,
   nombre: r.nombre,
   apellido: r.apellido,
@@ -21,6 +22,21 @@ const mapTurno = (r) => ({
   creado_en: r.creado_en
 });
 
+/** Acepta el servicio por nombre ("Corte") o por id. Devuelve el id, o null si no existe. */
+async function resolverServicio(pool, b) {
+  let rows;
+  if (b.servicio_id !== undefined) {
+    const id = idValido(b.servicio_id);
+    if (!id) return null;
+    [rows] = await pool.query('SELECT id FROM servicios WHERE id = ?', [id]);
+  } else {
+    const nombre = textoValido(b.servicio, 80);
+    if (!nombre) return null;
+    [rows] = await pool.query('SELECT id FROM servicios WHERE nombre = ?', [nombre]);
+  }
+  return rows[0]?.id ?? null;
+}
+
 export function turnosRouter(pool, { exigirLogin }) {
   const r = Router();
   r.use(exigirLogin); // todo lo de turnos requiere sesión
@@ -32,12 +48,12 @@ export function turnosRouter(pool, { exigirLogin }) {
   // Un cliente solo toca sus turnos; el admin, todos
   const puedeTocar = (req, fila) => req.usuario.rol === 'admin' || fila.usuario_uid === req.usuario.uid;
 
-  // Admin: todos los turnos. Cliente: solo los suyos.
+  // Admin: todos los turnos (o solo los suyos con ?mios=true). Cliente: siempre solo los suyos.
   r.get('/', async (req, res) => {
-    const esAdmin = req.usuario.rol === 'admin';
+    const verTodos = req.usuario.rol === 'admin' && req.query.mios !== 'true';
     const [rows] = await pool.query(
-      `${SELECT} ${esAdmin ? '' : 'WHERE t.usuario_uid = ?'} ORDER BY t.dia, t.hora`,
-      esAdmin ? [] : [req.usuario.uid]
+      `${SELECT} ${verTodos ? '' : 'WHERE t.usuario_uid = ?'} ORDER BY t.dia, t.hora`,
+      verTodos ? [] : [req.usuario.uid]
     );
     res.json(rows.map(mapTurno));
   });
@@ -46,8 +62,8 @@ export function turnosRouter(pool, { exigirLogin }) {
   r.get('/ocupados', async (req, res) => {
     const dia = req.query.dia;
     if (!esFechaValida(dia)) return res.status(400).json({ error: 'Falta ?dia=AAAA-MM-DD.' });
-    const [rows] = await pool.query('SELECT hora FROM turnos WHERE dia = ? ORDER BY hora', [dia]);
-    res.json(rows.map((x) => String(x.hora).slice(0, 5)));
+    const [rows] = await pool.query('SELECT id, hora FROM turnos WHERE dia = ? ORDER BY hora', [dia]);
+    res.json(rows.map((x) => ({ hora: String(x.hora).slice(0, 5), turnoId: x.id })));
   });
 
   r.get('/:id', async (req, res) => {
@@ -63,16 +79,14 @@ export function turnosRouter(pool, { exigirLogin }) {
     const b = req.body ?? {};
     const nombre = textoValido(b.nombre, 60);
     const apellido = textoValido(b.apellido, 60);
-    const servicioId = idValido(b.servicio_id);
     const obs = typeof b.observaciones === 'string' ? b.observaciones.trim().slice(0, 500) : '';
 
     if (!nombre || !apellido) return res.status(400).json({ error: 'Nombre y apellido son obligatorios.' });
-    if (!servicioId) return res.status(400).json({ error: 'Elegí un servicio.' });
     const errorFecha = validarDiaHora(b.dia, b.hora);
     if (errorFecha) return res.status(400).json({ error: errorFecha });
 
-    const [srv] = await pool.query('SELECT id FROM servicios WHERE id = ?', [servicioId]);
-    if (srv.length === 0) return res.status(400).json({ error: 'Ese servicio no existe.' });
+    const servicioId = await resolverServicio(pool, b);
+    if (!servicioId) return res.status(400).json({ error: 'Elegí un servicio que exista.' });
 
     try {
       const [ins] = await pool.query(
@@ -98,7 +112,8 @@ export function turnosRouter(pool, { exigirLogin }) {
     const b = req.body ?? {};
     const nombre = b.nombre === undefined ? actual.nombre : textoValido(b.nombre, 60);
     const apellido = b.apellido === undefined ? actual.apellido : textoValido(b.apellido, 60);
-    const servicioId = b.servicio_id === undefined ? actual.servicio_id : idValido(b.servicio_id);
+    const cambiaServicio = b.servicio_id !== undefined || b.servicio !== undefined;
+    const servicioId = cambiaServicio ? await resolverServicio(pool, b) : actual.servicio_id;
     const dia = b.dia === undefined ? actual.dia : b.dia;
     const hora = b.hora === undefined ? String(actual.hora).slice(0, 5) : b.hora;
     const obs = b.observaciones === undefined
@@ -108,18 +123,14 @@ export function turnosRouter(pool, { exigirLogin }) {
     const estado = req.usuario.rol === 'admin' && b.estado !== undefined ? b.estado : actual.estado;
 
     if (!nombre || !apellido) return res.status(400).json({ error: 'Nombre y apellido no son válidos.' });
-    if (!servicioId) return res.status(400).json({ error: 'Servicio inválido.' });
-    if (!['Pendiente', 'Confirmado'].includes(estado)) {
-      return res.status(400).json({ error: 'Estado inválido (Pendiente o Confirmado).' });
+    if (!servicioId) return res.status(400).json({ error: 'Elegí un servicio que exista.' });
+    if (!['Pendiente', 'Finalizado'].includes(estado)) {
+      return res.status(400).json({ error: 'Estado inválido (Pendiente o Finalizado).' });
     }
     // Las reglas de fecha/hora solo se exigen si se cambió el horario
     if (dia !== actual.dia || hora !== String(actual.hora).slice(0, 5)) {
       const errorFecha = validarDiaHora(dia, hora);
       if (errorFecha) return res.status(400).json({ error: errorFecha });
-    }
-    if (servicioId !== actual.servicio_id) {
-      const [srv] = await pool.query('SELECT id FROM servicios WHERE id = ?', [servicioId]);
-      if (srv.length === 0) return res.status(400).json({ error: 'Ese servicio no existe.' });
     }
 
     try {

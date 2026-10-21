@@ -1,0 +1,88 @@
+<div class="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-10 font-sans">
+  <div class="max-w-6xl mx-auto space-y-8">
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-neutral-900 pb-6 gap-4">
+      <div>
+        <div class="inline-block bg-neutral-900 border border-neutral-800 text-amber-400 text-xs px-3 py-1 rounded-full uppercase tracking-widest font-semibold mb-2">
+          Panel de Control Interno
+        </div>
+        <h1 class="text-3xl font-black tracking-tight text-white">Usuarios</h1>
+        <p class="text-neutral-500 text-sm font-light">
+          {{ usuarios().length }} registrados · {{ totalAdmins() }} administrador(es)
+        </p>
+      </div>
+
+      <div class="flex gap-3 self-start sm:self-center">
+        <a routerLink="/admin-dashboard"
+           class="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white px-5 py-2.5 rounded-lg text-sm font-medium transition duration-300">
+          ← Turnos
+        </a>
+        <button (click)="cerrarSesion()"
+                class="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white px-5 py-2.5 rounded-lg text-sm font-medium transition duration-300">
+          Cerrar Sesión
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-neutral-800 bg-neutral-900/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h3 class="text-lg font-bold text-amber-400">Gestión de usuarios</h3>
+        <input type="text" placeholder="Buscar por mail..."
+               [value]="busqueda()"
+               (input)="onBuscar($any($event.target).value)"
+               class="bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-amber-500 sm:w-72">
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-neutral-950 text-neutral-400 text-xs uppercase tracking-wider border-b border-neutral-800">
+              <th class="p-4 font-semibold">Mail</th>
+              <th class="p-4 font-semibold">Alta</th>
+              <th class="p-4 font-semibold text-center">Rol</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-neutral-800 text-sm font-light text-neutral-300">
+            @for (u of filtrados(); track u.uid) {
+              <tr class="hover:bg-neutral-800/30 transition duration-200">
+                <td class="p-4">
+                  <div class="font-normal text-white">{{ u.email }}</div>
+                  @if (u.uid === miUid()) {
+                    <div class="text-xs text-amber-500">Vos</div>
+                  }
+                </td>
+                <td class="p-4 text-neutral-400">
+                  {{ u.creadoEn ? u.creadoEn.toLocaleDateString('es-AR') : '—' }}
+                </td>
+                <td class="p-4 text-center">
+                  <select
+                    [value]="u.role"
+                    [disabled]="procesando() === u.uid || u.uid === miUid()"
+                    (change)="cambiarRol(u, $any($event.target).value)"
+                    [appEstado]="u.role"
+                    class="px-2.5 py-1 text-xs font-semibold rounded-full border bg-neutral-950 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    @for (r of roles; track r) {
+                      <option [value]="r" [selected]="r === u.role" class="bg-neutral-950 text-white">{{ r }}</option>
+                    }
+                  </select>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="p-8 text-center text-neutral-500 italic">
+                  @if (cargando()) {
+                    Cargando usuarios...
+                  } @else if (error()) {
+                    <span class="text-red-400 not-italic">{{ error() }}</span>
+                  } @else {
+                    No hay usuarios que coincidan.
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

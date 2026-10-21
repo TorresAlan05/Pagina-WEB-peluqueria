@@ -1,12 +1,15 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { ESTADOS, EstadoTurno, Turno, TurnosService } from '../services/turnos.service';
+import { EstadoDirective } from '../shared/estado.directive';
+import { FiltroTurnosPipe } from '../shared/filtro-turnos.pipe';
+import { FiltrosTurnos } from '../shared/filtros-turnos/filtros-turnos';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [],
+  imports: [RouterLink, FiltrosTurnos, FiltroTurnosPipe, EstadoDirective],
   templateUrl: './admin.html',
   styleUrl: './admin.css'
 })
@@ -20,6 +23,10 @@ export class Admin implements OnInit {
   listaTurnos = signal<Turno[]>([]);
   cargando = signal(true);
   error = signal('');
+  // Filtros que manda el componente hijo; el pipe `filtroTurnos` los aplica en el template
+  busqueda = signal('');
+  estadoFiltro = signal('');
+
   /** id del turno que se está modificando (para deshabilitar sus controles) */
   procesando = signal<string | null>(null);
 
@@ -39,10 +46,18 @@ export class Admin implements OnInit {
       this.listaTurnos.set(await this.turnosSvc.listarTodos());
     } catch (e) {
       console.error('No se pudieron cargar los turnos:', e);
-      this.error.set('No se pudieron cargar los turnos. Revisá las reglas de Firestore y tu conexión.');
+      this.error.set(e instanceof Error ? e.message : 'No se pudieron cargar los turnos.');
     } finally {
       this.cargando.set(false);
     }
+  }
+
+  onBuscar(texto: string): void {
+    this.busqueda.set(texto);
+  }
+
+  onEstadoFiltro(estado: string): void {
+    this.estadoFiltro.set(estado);
   }
 
   async cambiarEstado(turno: Turno, valor: string): Promise<void> {
@@ -55,7 +70,7 @@ export class Admin implements OnInit {
       this.listaTurnos.update((l) => l.map((t) => (t.id === turno.id ? { ...t, estado: nuevo } : t)));
     } catch (e) {
       console.error(e);
-      alert('No se pudo cambiar el estado. Verificá que tu usuario tenga rol admin.');
+      alert(e instanceof Error ? e.message : 'No se pudo cambiar el estado.');
       // se recarga para que el selector vuelva al valor real
       await this.cargarTurnos();
     } finally {

@@ -61,6 +61,13 @@ export class AuthService {
     this.rol.set(null);
   }
 
+  /** Token (JWT) del usuario para mandarlo al backend. Firebase lo renueva solo si venció. */
+   async obtenerToken(): Promise<string> {
+     const u = this.auth.currentUser;
+     if (!u) throw new Error('No hay una sesión iniciada.');
+     return u.getIdToken();
+   }
+   
   private cargarRol(u: User): Promise<Rol> {
     let p = this.enCurso.get(u.uid);
     if (!p) {
