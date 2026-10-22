@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Servicio, TurnosService } from '../services/turnos.service';
+import { descargarCsv } from '../shared/csv';
 
 @Component({
   selector: 'app-admin-servicios',
@@ -103,5 +104,12 @@ export class AdminServicios implements OnInit {
 
   formatearPrecio(precio: number): string {
     return precio.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
+  }
+    exportarCsv(): void {
+    descargarCsv(
+      'servicios.csv',
+      ['ID', 'Servicio', 'Precio (ARS)'],
+      this.servicios().map((s) => [s.id, s.nombre, s.precio])
+    );
   }
 }

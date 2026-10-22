@@ -39,6 +39,13 @@
         (buscar)="onBuscar($event)"
         (estadoElegido)="onEstadoFiltro($event)" />
 
+            <div class="px-5 py-3 flex justify-end border-b border-neutral-800">
+        <button type="button" (click)="exportarCsv(visibles)" [disabled]="visibles.length === 0"
+                class="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-amber-400 hover:text-amber-300 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition duration-300 disabled:opacity-50">
+          Descargar CSV ({{ visibles.length }})
+        </button>
+      </div>
+
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>

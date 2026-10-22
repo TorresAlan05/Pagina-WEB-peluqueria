@@ -5,6 +5,7 @@ import { ESTADOS, EstadoTurno, Turno, TurnosService } from '../services/turnos.s
 import { EstadoDirective } from '../shared/estado.directive';
 import { FiltroTurnosPipe } from '../shared/filtro-turnos.pipe';
 import { FiltrosTurnos } from '../shared/filtros-turnos/filtros-turnos';
+import { descargarCsv } from '../shared/csv';
 
 @Component({
   selector: 'app-admin',
@@ -107,6 +108,23 @@ export class Admin implements OnInit {
     const [y, m, d] = dia.split('-').map(Number);
     if (!y || !m || !d) return '';
     return new Date(y, m - 1, d).toLocaleDateString('es-AR', { weekday: 'long' });
+  }
+    exportarCsv(turnos: Turno[]): void {
+    descargarCsv(
+      'turnos.csv',
+      ['ID', 'Cliente', 'Mail', 'Servicio', 'Precio (ARS)', 'Fecha', 'Hora', 'Estado', 'Observaciones'],
+      turnos.map((t) => [
+        t.id,
+        `${t.nombre} ${t.apellido}`,
+        t.mail,
+        t.servicio,
+        t.precio,
+        this.formatearDia(t.dia),
+        t.hora,
+        t.estado,
+        t.observaciones ?? ''
+      ])
+    );
   }
 
   async cerrarSesion() {

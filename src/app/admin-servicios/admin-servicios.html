@@ -62,8 +62,12 @@
 
     <!-- Listado -->
     <div class="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden shadow-2xl">
-      <div class="p-5 border-b border-neutral-800 bg-neutral-900/50">
+            <div class="p-5 border-b border-neutral-800 bg-neutral-900/50 flex items-center justify-between gap-3">
         <h3 class="text-lg font-bold text-amber-400">Catálogo ({{ servicios().length }})</h3>
+        <button type="button" (click)="exportarCsv()" [disabled]="servicios().length === 0"
+                class="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-amber-400 hover:text-amber-300 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition duration-300 disabled:opacity-50">
+          Descargar CSV
+        </button>
       </div>
 
       <div class="overflow-x-auto">
