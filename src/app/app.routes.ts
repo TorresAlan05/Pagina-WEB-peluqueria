@@ -7,6 +7,7 @@ import { Turno } from './turno/turno';
 import { MisTurnos } from './mis-turnos/mis-turnos';
 import { Usuarios } from './usuarios/usuarios';
 import { roleGuard } from './guards/auth.guard';
+import { AdminServicios } from './admin-servicios/admin-servicios';
 
 
 export const routes: Routes = [
@@ -16,7 +17,9 @@ export const routes: Routes = [
   { path: 'registro', component: Registro },
   { path: 'admin-dashboard', component: Admin, canActivate: [roleGuard(['admin'])] },
   { path: 'admin-usuarios', component: Usuarios, canActivate: [roleGuard(['admin'])] },
+  { path: 'admin-servicios', component: AdminServicios, canActivate: [roleGuard(['admin'])] },
   { path: 'mis-turnos', component: MisTurnos, canActivate: [roleGuard(['cliente'])] },
   { path: 'turno', component: Turno, canActivate: [roleGuard(['cliente'])] },
-  { path: '**', redirectTo: 'home', pathMatch: 'full' }
+  { path: '**', redirectTo: 'home', pathMatch: 'full' },
+  
 ];

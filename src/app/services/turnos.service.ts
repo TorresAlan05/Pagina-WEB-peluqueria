@@ -91,6 +91,21 @@ export class TurnosService {
   /** Catálogo de servicios (público). */
   listarServicios(): Promise<Servicio[]> {
     return this.pedir<Servicio[]>('GET', '/servicios', undefined, false);
+    
+  }
+    /** Alta de servicio (solo admin, lo exige el servidor). */
+  crearServicio(datos: { nombre: string; precio: number }): Promise<Servicio> {
+    return this.pedir<Servicio>('POST', '/servicios', datos);
+  }
+
+  /** Modifica nombre y/o precio de un servicio (solo admin). */
+  actualizarServicio(id: number, datos: { nombre: string; precio: number }): Promise<Servicio> {
+    return this.pedir<Servicio>('PUT', `/servicios/${id}`, datos);
+  }
+
+  /** Baja de servicio (solo admin). Falla con 409 si hay turnos que lo usan. */
+  eliminarServicio(id: number): Promise<void> {
+    return this.pedir<void>('DELETE', `/servicios/${id}`);
   }
 
   /** Reserva un turno. Si el horario ya fue tomado, lanza ApiError con status 409. */

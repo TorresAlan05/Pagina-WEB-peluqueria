@@ -1,0 +1,110 @@
+<div class="min-h-screen bg-[#0a0a0a] text-white p-4 md:p-10 font-sans">
+  <div class="max-w-4xl mx-auto space-y-8">
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-neutral-900 pb-6 gap-4">
+      <div>
+        <div class="inline-block bg-neutral-900 border border-neutral-800 text-amber-400 text-xs px-3 py-1 rounded-full uppercase tracking-widest font-semibold mb-2">
+          Panel de Control Interno
+        </div>
+        <h1 class="text-3xl font-black tracking-tight text-white">Servicios</h1>
+        <p class="text-neutral-500 text-sm font-light">Alta, baja y modificación del catálogo.</p>
+      </div>
+      <a routerLink="/admin-dashboard"
+         class="self-start sm:self-center bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white px-5 py-2.5 rounded-lg text-sm font-medium transition duration-300">
+        Volver a turnos
+      </a>
+    </div>
+
+    <!-- Formulario de alta / edición -->
+    <form [formGroup]="form" (ngSubmit)="guardar()"
+          class="bg-neutral-900 border border-neutral-800 rounded-xl p-5 space-y-4 shadow-2xl">
+      <h3 class="text-lg font-bold text-amber-400">
+        {{ editandoId() === null ? 'Nuevo servicio' : 'Editar servicio' }}
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="sm:col-span-2">
+          <label for="nombre" class="block text-xs uppercase tracking-wider text-neutral-400 mb-1">Nombre</label>
+          <input id="nombre" type="text" formControlName="nombre" maxlength="80" placeholder="Ej: Corte clásico"
+                 class="w-full bg-neutral-950 border border-neutral-800 focus:border-amber-500 outline-none rounded-lg px-3 py-2 text-sm text-white">
+          @if (form.controls.nombre.touched && form.controls.nombre.invalid) {
+            <p class="text-red-400 text-xs mt-1">El nombre es obligatorio (máx. 80 caracteres).</p>
+          }
+        </div>
+
+        <div>
+          <label for="precio" class="block text-xs uppercase tracking-wider text-neutral-400 mb-1">Precio (ARS)</label>
+          <input id="precio" type="number" formControlName="precio" min="0" step="100"
+                 class="w-full bg-neutral-950 border border-neutral-800 focus:border-amber-500 outline-none rounded-lg px-3 py-2 text-sm text-white">
+          @if (form.controls.precio.touched && form.controls.precio.invalid) {
+            <p class="text-red-400 text-xs mt-1">Ingresá un precio válido (0 o más).</p>
+          }
+        </div>
+      </div>
+
+      @if (error()) {
+        <p class="text-red-400 text-sm">{{ error() }}</p>
+      }
+
+      <div class="flex gap-3">
+        <button type="submit" [disabled]="form.invalid || guardando()"
+                class="bg-amber-500 hover:bg-amber-600 text-neutral-950 px-5 py-2.5 rounded-lg text-sm font-bold transition duration-300 disabled:opacity-50">
+          {{ guardando() ? 'Guardando...' : (editandoId() === null ? 'Agregar servicio' : 'Guardar cambios') }}
+        </button>
+        @if (editandoId() !== null) {
+          <button type="button" (click)="cancelar()"
+                  class="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white px-5 py-2.5 rounded-lg text-sm font-medium transition duration-300">
+            Cancelar
+          </button>
+        }
+      </div>
+    </form>
+
+    <!-- Listado -->
+    <div class="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden shadow-2xl">
+      <div class="p-5 border-b border-neutral-800 bg-neutral-900/50">
+        <h3 class="text-lg font-bold text-amber-400">Catálogo ({{ servicios().length }})</h3>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-neutral-950 text-neutral-400 text-xs uppercase tracking-wider border-b border-neutral-800">
+              <th class="p-4 font-semibold">Servicio</th>
+              <th class="p-4 font-semibold">Precio</th>
+              <th class="p-4 font-semibold text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-neutral-800 text-sm font-light text-neutral-300">
+            @for (s of servicios(); track s.id) {
+              <tr class="hover:bg-neutral-800/30 transition duration-200">
+                <td class="p-4 text-white font-normal">{{ s.nombre }}</td>
+                <td class="p-4">{{ formatearPrecio(s.precio) }}</td>
+                <td class="p-4 text-center space-x-4">
+                  <button (click)="editar(s)" [disabled]="procesando() === s.id"
+                          class="text-amber-400 hover:text-amber-300 underline text-xs disabled:opacity-50">
+                    Editar
+                  </button>
+                  <button (click)="eliminar(s)" [disabled]="procesando() === s.id"
+                          class="text-red-400 hover:text-red-300 underline text-xs disabled:opacity-50">
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="p-8 text-center text-neutral-500 italic">
+                  @if (cargando()) {
+                    Cargando servicios...
+                  } @else {
+                    No hay servicios cargados.
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

@@ -5,8 +5,9 @@
 // IMPORTANTE: después de desplegar en Vercel, reemplazá la dirección de abajo por la real
 // (la que te muestra Vercel, terminada en "/api").
 const API_LOCAL = 'http://localhost:3000/api';
-const API_PRODUCCION = 'https://peluqueria-ft6k.vercel.app/';
+const API_PRODUCCION = 'https://peluqueria-ft6k.vercel.app/api';
 
 const esLocal = ['localhost', '127.0.0.1'].includes(globalThis.location?.hostname ?? '');
 
-export const API_URL = esLocal ? API_LOCAL : API_PRODUCCION;
+// Se sacan las barras finales para que nunca quede "//" en la URL
+export const API_URL = (esLocal ? API_LOCAL : API_PRODUCCION).replace(/\/+$/, '');
