@@ -9,7 +9,22 @@ export function crearApp({ pool, auth, corsOrigins }) {
   app.use(cors({ origin: corsOrigins }));
   app.use(express.json({ limit: '50kb' }));
 
+    // Para comprobar rápido que Vercel anda
+  app.get('/', (_req, res) =>
+    res.json({ ok: true, servicio: 'API peluquería', hora: new Date().toISOString() })
+  );
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+  // Comprueba que Vercel llega a la base de datos (Aiven)
+  app.get('/api/health/db', async (_req, res) => {
+    try {
+      await pool.query('SELECT 1');
+      res.json({ ok: true, db: 'conectada' });
+    } catch (e) {
+      console.error('Fallo la conexión a la base:', e);
+      res.status(500).json({ ok: false, db: 'error', codigo: e.code ?? null });
+    }
+  });
   app.use('/api/servicios', serviciosRouter(pool, auth));
   app.use('/api/turnos', turnosRouter(pool, auth));
 

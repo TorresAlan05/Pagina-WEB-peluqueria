@@ -5,7 +5,7 @@
 // IMPORTANTE: después de desplegar en Vercel, reemplazá la dirección de abajo por la real
 // (la que te muestra Vercel, terminada en "/api").
 const API_LOCAL = 'http://localhost:3000/api';
-const API_PRODUCCION = 'https://REEMPLAZAR-POR-TU-PROYECTO.vercel.app/api';
+const API_PRODUCCION = 'https://peluqueria-alpha-seven.vercel.app/';
 
 const esLocal = ['localhost', '127.0.0.1'].includes(globalThis.location?.hostname ?? '');
 
