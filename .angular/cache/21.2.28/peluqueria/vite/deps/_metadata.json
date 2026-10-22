@@ -1,0 +1,82 @@
+{
+  "hash": "1b1efbc6",
+  "configHash": "d4e591ea",
+  "lockfileHash": "1841b7cb",
+  "browserHash": "20aff0ed",
+  "optimized": {
+    "@angular/common": {
+      "src": "../../../../../../node_modules/@angular/common/fesm2022/common.mjs",
+      "file": "@angular_common.js",
+      "fileHash": "eab2cc8f",
+      "needsInterop": false
+    },
+    "@angular/core": {
+      "src": "../../../../../../node_modules/@angular/core/fesm2022/core.mjs",
+      "file": "@angular_core.js",
+      "fileHash": "b0897bee",
+      "needsInterop": false
+    },
+    "@angular/forms": {
+      "src": "../../../../../../node_modules/@angular/forms/fesm2022/forms.mjs",
+      "file": "@angular_forms.js",
+      "fileHash": "9c25a57b",
+      "needsInterop": false
+    },
+    "@angular/platform-browser": {
+      "src": "../../../../../../node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs",
+      "file": "@angular_platform-browser.js",
+      "fileHash": "9465560e",
+      "needsInterop": false
+    },
+    "@angular/router": {
+      "src": "../../../../../../node_modules/@angular/router/fesm2022/router.mjs",
+      "file": "@angular_router.js",
+      "fileHash": "62c79e58",
+      "needsInterop": false
+    },
+    "firebase/app": {
+      "src": "../../../../../../node_modules/firebase/app/dist/index.esm.js",
+      "file": "firebase_app.js",
+      "fileHash": "9d37dd3d",
+      "needsInterop": false
+    },
+    "firebase/auth": {
+      "src": "../../../../../../node_modules/firebase/auth/dist/index.esm.js",
+      "file": "firebase_auth.js",
+      "fileHash": "51869799",
+      "needsInterop": false
+    },
+    "firebase/firestore": {
+      "src": "../../../../../../node_modules/firebase/firestore/dist/index.esm.js",
+      "file": "firebase_firestore.js",
+      "fileHash": "afe506a7",
+      "needsInterop": false
+    },
+    "chart.js": {
+      "src": "../../../../../../node_modules/chart.js/dist/chart.js",
+      "file": "chart__js.js",
+      "fileHash": "c03c440e",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-DNTN6UQT": {
+      "file": "chunk-DNTN6UQT.js"
+    },
+    "chunk-DVFE225X": {
+      "file": "chunk-DVFE225X.js"
+    },
+    "chunk-HCWTEZGY": {
+      "file": "chunk-HCWTEZGY.js"
+    },
+    "chunk-SOX3PUA6": {
+      "file": "chunk-SOX3PUA6.js"
+    },
+    "chunk-B2KI3AIV": {
+      "file": "chunk-B2KI3AIV.js"
+    },
+    "chunk-GOMI4DH3": {
+      "file": "chunk-GOMI4DH3.js"
+    }
+  }
+}

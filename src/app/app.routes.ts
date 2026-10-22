@@ -10,6 +10,7 @@ import { roleGuard } from './guards/auth.guard';
 import { AdminServicios } from './admin-servicios/admin-servicios';
 
 
+
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: Home },
@@ -18,6 +19,11 @@ export const routes: Routes = [
   { path: 'admin-dashboard', component: Admin, canActivate: [roleGuard(['admin'])] },
   { path: 'admin-usuarios', component: Usuarios, canActivate: [roleGuard(['admin'])] },
   { path: 'admin-servicios', component: AdminServicios, canActivate: [roleGuard(['admin'])] },
+    {
+    path: 'admin-graficos',
+    loadComponent: () => import('./admin-graficos/admin-graficos').then((m) => m.AdminGraficos),
+    canActivate: [roleGuard(['admin'])]
+  },
   { path: 'mis-turnos', component: MisTurnos, canActivate: [roleGuard(['cliente'])] },
   { path: 'turno', component: Turno, canActivate: [roleGuard(['cliente'])] },
   { path: '**', redirectTo: 'home', pathMatch: 'full' },

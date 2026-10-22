@@ -9,6 +9,7 @@
 
     <nav class="flex flex-wrap items-center gap-2">
       @if (auth.rol() === 'admin') {
+        <a routerLink="/admin-graficos" [class]="enlace">Estadísticas</a>
         <a routerLink="/admin-dashboard" [class]="enlace">Turnos</a>
         <a routerLink="/admin-servicios" [class]="enlace">Servicios</a>
         <a routerLink="/admin-usuarios" [class]="enlace">Usuarios</a>
