@@ -15,7 +15,6 @@ export function crearApp({ pool, auth, corsOrigins }) {
   );
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
-  // Comprueba que Vercel llega a la base de datos (Aiven)
   app.get('/api/health/db', async (_req, res) => {
     try {
       await pool.query('SELECT 1');
