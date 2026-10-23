@@ -1,14 +1,26 @@
-<div class="container">
-  <div class="form-box">
-    <h2>Iniciar Sesion</h2>
+<div class="pagina-centrada">
+  <div class="tarjeta tarjeta-angosta">
+    <span class="sello">Mati &amp; Alan</span>
+    <h2 class="titulo-tarjeta">Iniciar sesión</h2>
+    <p class="subtitulo">Entrá para reservar y ver tus turnos.</p>
 
-    <form (ngSubmit)="login()">
-      <input type="email" [(ngModel)]="miLogin.mail" name="mail" placeholder="Email" required>
-      <input type="password" [(ngModel)]="miLogin.contra" name="contra" placeholder="Contraseña" required>
+    <form (ngSubmit)="login()" class="formulario">
+      <div>
+        <label class="etiqueta" for="mail">Email</label>
+        <input id="mail" class="campo" type="email" [(ngModel)]="miLogin.mail" name="mail"
+               placeholder="tu@email.com" autocomplete="email" required>
+      </div>
+      <div>
+        <label class="etiqueta" for="contra">Contraseña</label>
+        <input id="contra" class="campo" type="password" [(ngModel)]="miLogin.contra" name="contra"
+               placeholder="••••••••" autocomplete="current-password" required>
+      </div>
 
-      <button type="submit" [disabled]="cargando">{{ cargando ? "Ingresando..." : "Ingresar" }}</button>
+      <button type="submit" class="btn btn-primario btn-bloque" [disabled]="cargando">
+        {{ cargando ? "Ingresando..." : "Ingresar" }}
+      </button>
     </form>
 
-    <p>¿No tenés cuenta? <a routerLink="/registro">Registrarse</a></p>
+    <p class="pie-tarjeta">¿No tenés cuenta? <a routerLink="/registro" class="link-marca">Registrate</a></p>
   </div>
 </div>

@@ -22,6 +22,7 @@ import {
   Tooltip
 } from 'chart.js';
 import { Turno, TurnosService } from '../services/turnos.service';
+import { TemaService } from '../services/tema';
 
 // Se registra solo lo que se usa (el bundle queda más chico)
 Chart.register(
@@ -39,6 +40,7 @@ const PALETA = ['#f59e0b', '#34d399', '#60a5fa', '#f472b6', '#a78bfa', '#fb923c'
 })
 export class AdminGraficos implements OnInit {
   private turnosSvc = inject(TurnosService);
+  private temaSvc = inject(TemaService);
 
   turnos = signal<Turno[]>([]);
   cargando = signal(true);
@@ -83,6 +85,7 @@ export class AdminGraficos implements OnInit {
   constructor() {
     // Redibuja los gráficos cuando cambian los datos o cuando los canvas ya existen
     effect(() => {
+      this.temaSvc.tema();
       const datos = this.porServicio();
       const c1 = this.canvasTurnos()?.nativeElement;
       const c2 = this.canvasIngresos()?.nativeElement;
@@ -125,8 +128,11 @@ export class AdminGraficos implements OnInit {
   ): void {
     this.destruir();
 
-    Chart.defaults.color = '#a3a3a3';
-    Chart.defaults.borderColor = '#262626';
+        const css = getComputedStyle(document.documentElement);
+    const rgb = (v: string) => `rgb(${css.getPropertyValue(v).trim().replace(/\s+/g, ',')})`;
+
+    Chart.defaults.color = rgb('--n-400');
+    Chart.defaults.borderColor = rgb('--n-800');
     Chart.defaults.font.family = 'Montserrat, sans-serif';
 
     const etiquetas = datos.map((d) => d.servicio);
@@ -161,7 +167,7 @@ export class AdminGraficos implements OnInit {
             {
               data: datos.map((d) => d.ingresos),
               backgroundColor: PALETA,
-              borderColor: '#171717',
+              borderColor: rgb('--n-900'),
               borderWidth: 2
             }
           ]

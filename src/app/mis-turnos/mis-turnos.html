@@ -1,75 +1,81 @@
-<div class="container">
-  <div class="form-box turnos-container">
-    
-    <div class="header-acciones" style="text-align: right; margin-bottom: 15px;">
-      <button (click)="cerrarSesion()" class="btn-logout" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-        Cerrar Sesión
-      </button>
+<div class="pagina-centrada">
+  <div class="tarjeta tarjeta-ancha">
+
+    <div class="encabezado-tarjeta">
+      <div>
+        <span class="sello">Mati &amp; Alan</span>
+        <h2 class="titulo-tarjeta">Mis turnos</h2>
+        <p class="subtitulo">{{ listaTurnos().length }} turno(s) agendado(s)</p>
+      </div>
+      <a routerLink="/turno" class="btn btn-primario">+ Nuevo turno</a>
     </div>
 
-    <h2>Turnos Agendados</h2>
-
-    <div *ngIf="listaTurnos().length === 0" class="sin-turnos">
+    <div *ngIf="listaTurnos().length === 0" class="vacio">
       <p>No hay turnos reservados por el momento.</p>
-      <a routerLink="/turno" class="btn-link">Sacar un turno aquí</a>
+      <a routerLink="/turno" class="link-marca">Sacar un turno aquí</a>
     </div>
 
-    <div *ngIf="listaTurnos().length > 0" class="lista-turnos">
-      <div *ngFor="let turno of listaTurnos(); let i = index" class="turno-item">
-        
-        <div *ngIf="indiceEditando() === i; else vistaNormal" class="turno-edicion-form">
-          <h3>Modificando turno de {{ turno.nombre }}</h3>
-          
-          <div class="campo-edicion">
-            <label>Servicio:</label>
-            <select [(ngModel)]="turnoEditado.servicio" class="select-edicion">
-              <option *ngFor="let s of listaServicios()" [value]="s">{{ s }}</option>
-            </select>
+    <ng-container *ngIf="listaTurnos().length > 0">
+      <div class="grilla-turnos">
+        <div *ngFor="let turno of listaTurnos(); let i = index" class="turno-item">
+
+          <div *ngIf="indiceEditando() === i; else vistaNormal" class="turno-edicion">
+            <h3>Modificando turno de {{ turno.nombre }}</h3>
+
+            <div>
+              <label class="etiqueta">Servicio</label>
+              <select [(ngModel)]="turnoEditado.servicio" class="campo">
+                <option *ngFor="let s of listaServicios()" [value]="s">{{ s }}</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="etiqueta">Día</label>
+              <input type="date" class="campo"
+                     [ngModel]="turnoEditado.dia"
+                     (ngModelChange)="turnoEditado.dia = $event; cambioDia()"
+                     [min]="fechaMin" [max]="fechaMax">
+            </div>
+
+            <div>
+              <label class="etiqueta">Hora</label>
+              <select [(ngModel)]="turnoEditado.hora" class="campo">
+                <option value="" disabled>Seleccione una hora</option>
+                <option *ngFor="let h of listaHoras" [value]="h" [disabled]="horaNoDisponible(h)">
+                  {{ h }} hs{{ horaNoDisponible(h) ? ' (no disponible)' : '' }}
+                </option>
+              </select>
+            </div>
+
+            <div class="turno-acciones">
+              <button (click)="guardarEdicion(i)" [disabled]="guardando()" class="btn btn-primario btn-chico">Guardar</button>
+              <button (click)="cancelarEdicion()" class="btn btn-secundario btn-chico">Cancelar</button>
+            </div>
           </div>
 
-          <div class="campo-edicion">
-  <label>Día:</label>
-  <input type="date" class="select-edicion"
-         [ngModel]="turnoEditado.dia"
-         (ngModelChange)="turnoEditado.dia = $event; cambioDia()"
-         [min]="fechaMin" [max]="fechaMax">
-</div>
+          <ng-template #vistaNormal>
+            <div class="turno-info">
+              <h3>{{ turno.nombre }} {{ turno.apellido }}</h3>
+              <span class="chip">{{ turno.servicio }}</span>
+              <span [appEstado]="turno.estado"
+                    class="inline-block w-fit border rounded-full px-3 py-0.5 text-xs font-semibold">
+                {{ turno.estado }}
+              </span>
+              <p class="turno-dato">{{ turno.dia }} · {{ turno.hora }} hs</p>
+              <p *ngIf="turno.observaciones" class="turno-obs">{{ turno.observaciones }}</p>
+            </div>
 
-          <div class="campo-edicion">
-  <label>Hora:</label>
-  <select [(ngModel)]="turnoEditado.hora" class="select-edicion">
-    <option value="" disabled>Seleccione una hora</option>
-    <option *ngFor="let h of listaHoras" [value]="h" [disabled]="horaNoDisponible(h)">
-      {{ h }} hs{{ horaNoDisponible(h) ? ' (no disponible)' : '' }}
-    </option>
-  </select>
-</div>
-
-          <div class="turno-acciones">
-            <button (click)="guardarEdicion(i)" [disabled]="guardando()" class="btn-guardar">💾 Guardar</button>
-            <button (click)="cancelarEdicion()" class="btn-cancelar">❌ Cancelar</button>
-          </div>
+            <div class="turno-acciones">
+              <button (click)="habilitarEdicion(i)" class="btn btn-secundario btn-chico">Editar</button>
+              <button (click)="eliminarTurno(i)" class="btn btn-peligro btn-chico">Eliminar</button>
+            </div>
+          </ng-template>
         </div>
-        
-        <ng-template #vistaNormal>
-          <div class="turno-info">
-            <h3>{{ turno.nombre }} {{ turno.apellido }}</h3>
-            <p class="servicio-tag">{{ turno.servicio }}</p>
-            <p class="obs">Estado: <strong>{{ turno.estado }}</strong></p>
-            <p class="fecha-hora">📅 {{ turno.dia }} - ⏰ {{ turno.hora }} hs</p>
-            <p *ngIf="turno.observaciones" class="obs">📝 <em>{{ turno.observaciones }}</em></p>
-          </div>
-          
-          <div class="turno-acciones">
-            <button (click)="habilitarEdicion(i)" class="btn-editar">✏️ Editar</button>
-            <button (click)="eliminarTurno(i)" class="btn-eliminar">❌ Eliminar</button>
-          </div>
-        </ng-template>
       </div>
 
-      <button (click)="borrarTodosLosTurnos()" class="btn-borrar">Vaciar Agenda</button>
-    </div>
-
-    <p><a routerLink="/turno">← Volver al formulario</a></p>
+      <div class="pie-acciones">
+        <button (click)="borrarTodosLosTurnos()" class="btn btn-peligro btn-chico">Vaciar agenda</button>
+      </div>
+    </ng-container>
   </div>
 </div>

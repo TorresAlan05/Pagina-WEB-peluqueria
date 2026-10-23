@@ -1,36 +1,58 @@
-<div class="container">
-  <div class="form-box">
-    <h2>Reservar Turno</h2>
-    
-    <form [formGroup]="formTurno" (ngSubmit)="onSubmit()" class="formulario-turno">
-      
-      <input type="text" formControlName="nombre" placeholder="Nombre">
-   
-      <input type="text" formControlName="apellido" placeholder="Apellido">
+<div class="pagina-centrada">
+  <div class="tarjeta tarjeta-media">
+    <span class="sello">Mati &amp; Alan</span>
+    <h2 class="titulo-tarjeta">Reservar turno</h2>
+    <p class="subtitulo">Atendemos de lunes a viernes. Elegí el servicio, el día y la hora.</p>
 
-      <select formControlName="servicio">
-        <option value="" disabled selected>Seleccione un servicio</option>
-        <option *ngFor="let s of listaServicios()" [value]="s">{{ s }}</option>
-      </select>
-   
-      <label>Día:</label>
-<input type="date" formControlName="dia" [min]="fechaMin" [max]="fechaMax">
-<p *ngIf="formTurno.get('dia')?.errors?.['finDeSemana']" style="color: #e53e3e; font-size: 13px;">
-  Atendemos de lunes a viernes.
-</p>
+    <form [formGroup]="formTurno" (ngSubmit)="onSubmit()" class="formulario">
 
-<select formControlName="hora">
-  <option value="" disabled>Seleccione una hora</option>
-  <option *ngFor="let h of listaHoras" [value]="h" [disabled]="horaNoDisponible(h)">
-    {{ h }}{{ horaNoDisponible(h) ? ' (no disponible)' : '' }}
-  </option>
-</select>
+      <div class="fila-2">
+        <div>
+          <label class="etiqueta" for="nombre">Nombre</label>
+          <input id="nombre" class="campo" type="text" formControlName="nombre" placeholder="Nombre">
+        </div>
+        <div>
+          <label class="etiqueta" for="apellido">Apellido</label>
+          <input id="apellido" class="campo" type="text" formControlName="apellido" placeholder="Apellido">
+        </div>
+      </div>
 
-      <label>Observaciones (Opcional):</label>
-      <textarea formControlName="observaciones"></textarea>
+      <div>
+        <label class="etiqueta" for="servicio">Servicio</label>
+        <select id="servicio" class="campo" formControlName="servicio">
+          <option value="" disabled selected>Seleccione un servicio</option>
+          <option *ngFor="let s of listaServicios()" [value]="s">{{ s }}</option>
+        </select>
+      </div>
 
-      <button type="submit" [disabled]="formTurno.invalid || enviando()">{{ enviando() ? 'Guardando...' : 'Agendar Turno' }}</button>
-      
+      <div class="fila-2">
+        <div>
+          <label class="etiqueta" for="dia">Día</label>
+          <input id="dia" class="campo" type="date" formControlName="dia" [min]="fechaMin" [max]="fechaMax">
+          <p *ngIf="formTurno.get('dia')?.errors?.['finDeSemana']" class="aviso-error">
+            Atendemos de lunes a viernes.
+          </p>
+        </div>
+        <div>
+          <label class="etiqueta" for="hora">Hora</label>
+          <select id="hora" class="campo" formControlName="hora">
+            <option value="" disabled>Seleccione una hora</option>
+            <option *ngFor="let h of listaHoras" [value]="h" [disabled]="horaNoDisponible(h)">
+              {{ h }}{{ horaNoDisponible(h) ? ' (no disponible)' : '' }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="etiqueta" for="observaciones">Observaciones (opcional)</label>
+        <textarea id="observaciones" class="campo" rows="3" formControlName="observaciones"
+                  placeholder="Algo que quieras que sepamos"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primario btn-bloque" [disabled]="formTurno.invalid || enviando()">
+        {{ enviando() ? 'Guardando...' : 'Agendar turno' }}
+      </button>
     </form>
   </div>
 </div>

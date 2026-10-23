@@ -4,11 +4,12 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 import { ApiError, Turno, TurnosService } from '../services/turnos.service';
+import { EstadoDirective } from '../shared/estado.directive';
 
 @Component({
   selector: 'app-mis-turnos',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, EstadoDirective],
   templateUrl: './mis-turnos.html',
   styleUrls: ['./mis-turnos.css']
 })

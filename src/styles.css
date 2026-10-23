@@ -1,104 +1,347 @@
+/* ================= TEMA OSCURO (por defecto) ================= */
+:root {
+  color-scheme: dark;
+
+  --white: 255 255 255;      /* títulos y texto principal */
+  --n-50: 250 250 250;
+  --n-100: 245 245 245;
+  --n-200: 232 232 232;
+  --n-300: 222 222 222;
+  --n-400: 190 190 190;      /* texto secundario */
+  --n-500: 150 150 150;      /* texto apagado */
+  --n-600: 130 130 130;      /* placeholders */
+  --n-700: 64 64 64;         /* bordes de campos */
+  --n-800: 44 44 44;         /* bordes */
+  --n-900: 24 24 24;         /* tarjetas */
+  --n-950: 10 10 10;         /* fondo de página */
+
+  --acento: 245 158 11;      /* naranja de marca */
+  --acento-texto: #fbbf24;   /* naranja para texto */
+  --peligro: 248 113 113;
+  --sombra: 0 25px 50px -12px rgb(0 0 0 / 0.65);
+}
+
+/* ================= TEMA CLARO ================= */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --white: 28 25 23;
+  --n-50: 20 18 16;
+  --n-100: 28 25 23;
+  --n-200: 41 37 33;
+  --n-300: 61 55 48;
+  --n-400: 87 79 69;
+  --n-500: 107 98 87;
+  --n-600: 128 118 104;
+  --n-700: 214 206 193;
+  --n-800: 228 221 210;
+  --n-900: 255 255 255;      /* tarjetas blancas */
+  --n-950: 247 243 236;      /* fondo crema */
+
+  --acento-texto: #b45309;
+  --peligro: 185 28 28;
+  --sombra: 0 25px 50px -20px rgb(146 90 20 / 0.35);
+}
+
+/* ================= BASE ================= */
+html {
+  scroll-behavior: smooth;
+}
 
 body {
   margin: 0;
+  min-height: 100vh;
   font-family: 'Montserrat', sans-serif;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: rgb(var(--white));
+  background-color: rgb(var(--n-950));
+  background-image:
+    radial-gradient(55rem 28rem at 90% -8%, rgb(var(--acento) / 0.16), transparent 65%),
+    radial-gradient(40rem 26rem at -8% 108%, rgb(var(--acento) / 0.10), transparent 65%);
+  background-attachment: fixed;
+  transition: background-color 0.25s, color 0.25s;
 }
 
+/* Puntitos suaves: le dan textura al fondo para que las tarjetas se destaquen */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgb(var(--n-700) / 0.55) 1px, transparent 1.2px);
+  background-size: 24px 24px;
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent 85%);
+  mask-image: linear-gradient(to bottom, #000, transparent 85%);
+}
 
-.container {
-  height: 100vh;
+/* Red de seguridad: si queda algún fondo fijo oscuro en una plantilla */
+html .bg-\[\#0a0a0a\] {
+  background-color: transparent;
+}
+
+/* ================= PÁGINAS Y TARJETAS ================= */
+.pagina-centrada {
+  min-height: calc(100vh - 5rem);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
 }
 
+.tarjeta {
+  width: 100%;
+  background: rgb(var(--n-900));
+  border: 1px solid rgb(var(--n-800));
+  border-top: 3px solid rgb(var(--acento));
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: var(--sombra);
+  animation: aparecer 0.45s ease both;
+}
+.tarjeta-angosta { max-width: 26rem; }
+.tarjeta-media { max-width: 36rem; }
+.tarjeta-ancha { max-width: 64rem; }
 
-.form-box {
-  background: #fff;
-  padding: 30px;
-  border-radius: 12px;
-  width: 320px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sello {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--acento-texto);
+  background: rgb(var(--acento) / 0.12);
+  border: 1px solid rgb(var(--acento) / 0.3);
+  padding: 0.3rem 0.8rem;
+  border-radius: 9999px;
+}
+
+.titulo-tarjeta {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0.75rem 0 0.25rem;
+  color: rgb(var(--white));
+}
+
+.subtitulo {
+  font-size: 0.875rem;
+  color: rgb(var(--n-500));
+  margin: 0 0 1.5rem;
+}
+
+.pie-tarjeta {
+  margin: 1.25rem 0 0;
   text-align: center;
+  font-size: 0.85rem;
+  color: rgb(var(--n-500));
 }
 
-
-.form-box h2 {
-  margin-bottom: 20px;
-  color: #333;
+/* ================= FORMULARIOS ================= */
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-
-.form-box input {
-  width: 100%;
-  padding: 10px;
-  margin: 8px 0;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  outline: none;
-  transition: 0.3s;
+.fila-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 560px) {
+  .fila-2 { grid-template-columns: 1fr 1fr; }
 }
 
-
-.form-box input:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 5px rgba(102,126,234,0.5);
-}
-
-.form-box label {
+.etiqueta {
   display: block;
-  text-align: left;
-  font-size: 14px;
-  color: #555;
-  margin-top: 10px;
-  font-weight: bold;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--n-400));
+  margin-bottom: 0.4rem;
 }
 
-.form-box button {
+.campo {
   width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  background: #667eea;
-  border: none;
-  color: white;
-  border-radius: 8px;
+  box-sizing: border-box;
+  padding: 0.7rem 0.9rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: rgb(var(--white));
+  background: rgb(var(--n-950));
+  border: 1px solid rgb(var(--n-700));
+  border-radius: 0.65rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.campo::placeholder { color: rgb(var(--n-600)); }
+.campo:focus {
+  border-color: rgb(var(--acento));
+  box-shadow: 0 0 0 3px rgb(var(--acento) / 0.25);
+}
+.campo:disabled { opacity: 0.5; }
+.campo.ng-invalid.ng-touched { border-color: rgb(var(--peligro)); }
+textarea.campo { resize: vertical; min-height: 5rem; }
+
+.aviso-error {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: rgb(var(--peligro));
+}
+
+/* ================= BOTONES Y LINKS ================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.75rem 1.4rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: 0.3s;
+  text-decoration: none;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.1s;
+}
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-bloque { width: 100%; }
+.btn-chico { padding: 0.5rem 1rem; font-size: 0.7rem; }
+
+.btn-primario {
+  background: #f59e0b;
+  color: #0a0a0a;
+  box-shadow: 0 8px 20px -8px rgb(245 158 11 / 0.6);
+}
+.btn-primario:hover:not(:disabled) { background: #d97706; }
+
+.btn-secundario {
+  background: transparent;
+  color: rgb(var(--n-300));
+  border-color: rgb(var(--n-700));
+}
+.btn-secundario:hover:not(:disabled) {
+  border-color: rgb(var(--acento));
+  color: var(--acento-texto);
 }
 
-
-.form-box button:hover {
-  background: #5a67d8;
+.btn-peligro {
+  background: transparent;
+  color: rgb(var(--peligro));
+  border-color: rgb(var(--peligro) / 0.45);
+}
+.btn-peligro:hover:not(:disabled) {
+  background: rgb(var(--peligro) / 0.12);
+  border-color: rgb(var(--peligro));
 }
 
-
-.form-box p {
-  margin-top: 10px;
-  font-size: 14px;
-}
-
-
-.form-box a {
-  color: #667eea;
+.link-marca {
+  color: var(--acento-texto);
+  font-weight: 600;
   text-decoration: none;
 }
+.link-marca:hover { text-decoration: underline; }
 
-.form-box a:hover {
-  text-decoration: underline;
+/* ================= MIS TURNOS ================= */
+.encabezado-tarjeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.encabezado-tarjeta .titulo-tarjeta { margin-top: 0; }
+.encabezado-tarjeta .subtitulo { margin-bottom: 0; }
+
+.grilla-turnos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1.25rem;
 }
 
-.form-box {
-  animation: fadeIn 0.5s ease;
+.turno-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: rgb(var(--n-950));
+  border: 1px solid rgb(var(--n-800));
+  border-radius: 0.9rem;
+  transition: border-color 0.2s;
+}
+.turno-item:hover { border-color: rgb(var(--acento) / 0.55); }
+
+.turno-info { display: flex; flex-direction: column; gap: 0.6rem; }
+.turno-info h3 { margin: 0; font-size: 1.05rem; font-weight: 700; }
+
+.chip {
+  display: inline-block;
+  width: fit-content;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--acento-texto);
+  background: rgb(var(--acento) / 0.12);
+  border: 1px solid rgb(var(--acento) / 0.3);
+  padding: 0.25rem 0.7rem;
+  border-radius: 9999px;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.turno-dato { margin: 0; font-size: 0.85rem; color: rgb(var(--n-400)); }
+.turno-obs { margin: 0; font-size: 0.8rem; font-style: italic; color: rgb(var(--n-500)); }
+
+.turno-acciones {
+  display: flex;
+  gap: 0.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(var(--n-800));
 }
+.turno-acciones .btn { flex: 1; }
+
+.turno-edicion { display: flex; flex-direction: column; gap: 0.8rem; }
+.turno-edicion h3 { margin: 0; font-size: 1rem; font-weight: 700; }
+
+.pie-acciones { display: flex; justify-content: flex-end; margin-top: 1.5rem; }
+
+.vacio { text-align: center; padding: 2.5rem 0; color: rgb(var(--n-500)); }
+.vacio p { margin: 0 0 0.75rem; }
+
+/* ================= TEXTO DE MARCA (home) ================= */
+.texto-marca {
+  background-image: linear-gradient(90deg, #fbbf24, #d97706);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+:root[data-theme="light"] .texto-marca {
+  background-image: linear-gradient(90deg, #d97706, #92400e);
+}
+
+/* ================= AJUSTES DEL TEMA CLARO =================
+   El naranja claro, el verde y el rojo pierden contraste sobre fondo blanco:
+   en modo claro usan una versión más oscura para que se lean bien. */
+html[data-theme="light"] .text-amber-400,
+html[data-theme="light"] .text-amber-500,
+html[data-theme="light"] .hover\:text-amber-300:hover,
+html[data-theme="light"] .hover\:text-amber-400:hover,
+html[data-theme="light"] .hover\:text-amber-500:hover {
+  color: #b45309;
+}
+html[data-theme="light"] .text-emerald-400 { color: #047857; }
+html[data-theme="light"] .text-red-400,
+html[data-theme="light"] .hover\:text-red-300:hover { color: #b91c1c; }
+/* texto oscuro sobre los botones naranjas */
+html[data-theme="light"] .text-neutral-950 { color: #1c1917; }
