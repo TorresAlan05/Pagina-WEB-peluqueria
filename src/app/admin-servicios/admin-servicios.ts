@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Servicio, TurnosService } from '../services/turnos.service';
 import { descargarCsv } from '../shared/csv';
+import { AvisoService } from '../services/aviso.service';
 
 @Component({
   selector: 'app-admin-servicios',
@@ -13,6 +14,7 @@ import { descargarCsv } from '../shared/csv';
 export class AdminServicios implements OnInit {
   private svc = inject(TurnosService);
   private fb = inject(FormBuilder);
+  private aviso = inject(AvisoService);
 
   servicios = signal<Servicio[]>([]);
   cargando = signal(true);
@@ -86,7 +88,7 @@ export class AdminServicios implements OnInit {
   }
 
   async eliminar(s: Servicio): Promise<void> {
-    if (!confirm(`¿Eliminar el servicio "${s.nombre}"?`)) return;
+    if (!(await this.aviso.confirmar(`¿Eliminar el servicio "${s.nombre}"?`))) return;
 
     this.procesando.set(s.id);
     try {
@@ -96,7 +98,7 @@ export class AdminServicios implements OnInit {
     } catch (e) {
       console.error(e);
       // Si hay turnos que usan el servicio, el servidor responde con el motivo
-      alert(e instanceof Error ? e.message : 'No se pudo eliminar el servicio.');
+      this.aviso.error(e instanceof Error ? e.message : 'No se pudo eliminar el servicio.');
     } finally {
       this.procesando.set(null);
     }

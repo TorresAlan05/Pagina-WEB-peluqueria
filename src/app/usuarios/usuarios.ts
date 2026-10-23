@@ -4,6 +4,7 @@ import { AuthService, Rol } from '../services/auth.service';
 import { Usuario, UsuariosService } from '../services/usuarios.service';
 import { EstadoDirective } from '../shared/estado.directive';
 import { TurnosService } from '../services/turnos.service';
+import { AvisoService } from '../services/aviso.service';
 
 @Component({
   selector: 'app-usuarios',
@@ -13,6 +14,7 @@ import { TurnosService } from '../services/turnos.service';
   styleUrl: './usuarios.css'
 })
 export class Usuarios implements OnInit {
+  private aviso = inject(AvisoService);
   private auth = inject(AuthService);
   private router = inject(Router);
   private svc = inject(UsuariosService);
@@ -67,11 +69,11 @@ export class Usuarios implements OnInit {
 
     // Evita sacarse el rol uno mismo y quedarse sin administradores
     if (u.uid === this.miUid()) {
-      alert('No podés cambiar tu propio rol.');
+      this.aviso.error('No podés cambiar tu propio rol.');
       await this.cargar();
       return;
     }
-    if (!confirm(`¿Cambiar el rol de ${u.email} a "${nuevo}"?`)) {
+    if (!(await this.aviso.confirmar(`¿Cambiar el rol de ${u.email} a "${nuevo}"?`))) {
       await this.cargar(); // el selector vuelve al valor real
       return;
     }
@@ -82,7 +84,7 @@ export class Usuarios implements OnInit {
       this.usuarios.update((l) => l.map((x) => (x.uid === u.uid ? { ...x, role: nuevo } : x)));
     } catch (e) {
       console.error(e);
-      alert('No se pudo cambiar el rol.');
+      this.aviso.error('No se pudo cambiar el rol.');
       await this.cargar();
     } finally {
       this.procesando.set(null);
@@ -90,7 +92,7 @@ export class Usuarios implements OnInit {
   }
     async eliminar(u: Usuario): Promise<void> {
     if (u.role === 'admin' || u.uid === this.miUid()) return;
-    const ok = confirm(
+    const ok = await this.aviso.confirmar(
       `¿Eliminar la cuenta de ${u.nombre || u.email}?\n\nSe borran su acceso, su perfil y sus turnos. No se puede deshacer.`
     );
     if (!ok) return;
@@ -101,7 +103,7 @@ export class Usuarios implements OnInit {
       this.usuarios.update((l) => l.filter((x) => x.uid !== u.uid));
     } catch (e) {
       console.error(e);
-      alert(e instanceof Error ? e.message : 'No se pudo eliminar la cuenta.');
+      this.aviso.error(e instanceof Error ? e.message : 'No se pudo eliminar la cuenta.');
     } finally {
       this.procesando.set(null);
     }

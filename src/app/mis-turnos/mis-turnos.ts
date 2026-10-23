@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 import { ApiError, Turno, TurnosService } from '../services/turnos.service';
 import { EstadoDirective } from '../shared/estado.directive';
+import { AvisoService } from '../services/aviso.service';
 
 @Component({
   selector: 'app-mis-turnos',
@@ -14,6 +15,7 @@ import { EstadoDirective } from '../shared/estado.directive';
   styleUrls: ['./mis-turnos.css']
 })
 export class MisTurnos implements OnInit {
+  
   listaTurnos = signal<Turno[]>([]);
   indiceEditando = signal(-1);
   horasOcupadas = signal<string[]>([]);
@@ -29,6 +31,7 @@ export class MisTurnos implements OnInit {
   ];
 
   constructor(
+    private aviso: AvisoService,
     private router: Router,
     private auth: AuthService,
     private turnosSvc: TurnosService
@@ -36,7 +39,7 @@ export class MisTurnos implements OnInit {
 
   async ngOnInit(): Promise<void> {
     if (!this.auth.user()) {
-      alert('Debes iniciar sesión para ver tus turnos.');
+      this.aviso.error('Debes iniciar sesión para ver tus turnos.');
       this.router.navigate(['/login']);
       return;
     }
@@ -58,7 +61,7 @@ export class MisTurnos implements OnInit {
   }
 
   async cerrarSesion(): Promise<void> {
-    if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+    if (await this.aviso.confirmar('¿Estás seguro que deseas cerrar sesión?')) {
       await this.auth.logout();
       this.router.navigate(['/login']);
     }
@@ -71,21 +74,21 @@ export class MisTurnos implements OnInit {
       this.listaTurnos.set(await this.turnosSvc.listarMios(user.uid));
     } catch (e) {
       console.error(e);
-      alert(e instanceof Error ? e.message : 'No se pudieron cargar tus turnos.');
+      this.aviso.error(e instanceof Error ? e.message : 'No se pudieron cargar tus turnos.');
     }
   }
 
   async eliminarTurno(index: number): Promise<void> {
     const turno = this.listaTurnos()[index];
     if (!turno) return;
-    if (!confirm(`¿Estás seguro de que deseas eliminar el turno de ${turno.nombre} ${turno.apellido}?`)) return;
+    if (!(await this.aviso.confirmar(`¿Estás seguro de que deseas eliminar el turno de ${turno.nombre} ${turno.apellido}?`))) return;
 
     try {
       await this.turnosSvc.eliminar(turno);
       await this.cargarTurnos();
     } catch (e) {
       console.error(e);
-      alert('No se pudo eliminar el turno.');
+      this.aviso.error('No se pudo eliminar el turno.');
     }
   }
 
@@ -151,11 +154,11 @@ export class MisTurnos implements OnInit {
     const { dia, hora, servicio } = this.turnoEditado;
 
     if (!turno || !servicio || !dia || !hora || !/^\d{4}-\d{2}-\d{2}$/.test(dia)) {
-      alert('Elegí un servicio, una fecha del calendario y una hora.');
+      this.aviso.error('Elegí un servicio, una fecha del calendario y una hora.');
       return;
     }
     if (this.esFinDeSemana(dia)) {
-      alert('Atendemos de lunes a viernes.');
+      this.aviso.error('Atendemos de lunes a viernes.');
       return;
     }
 
@@ -169,13 +172,13 @@ export class MisTurnos implements OnInit {
       await this.turnosSvc.actualizar(turno, { servicio, dia, hora });
       this.cancelarEdicion();
       await this.cargarTurnos();
-      alert('Turno modificado con éxito.');
+      this.aviso.exito('Turno modificado con éxito.');
     } catch (e) {
       console.error(e);
       if (e instanceof ApiError && e.status === 409) {
         this.horaTomada(await this.obtenerHorasOcupadas(dia, index));
       } else {
-        alert(e instanceof Error ? e.message : 'No se pudo guardar el turno.');
+        this.aviso.error(e instanceof Error ? e.message : 'No se pudo guardar el turno.');
       }
     } finally {
       this.guardando.set(false);
@@ -183,19 +186,19 @@ export class MisTurnos implements OnInit {
   }
 
   private horaTomada(ocupadas: string[]): void {
-    alert('No se pudo guardar: ese horario ya fue reservado. Elegí otro, por favor.');
+    this.aviso.error('No se pudo guardar: ese horario ya fue reservado. Elegí otro, por favor.');
     this.horasOcupadas.set(ocupadas);
     this.turnoEditado.hora = '';
   }
 
   async borrarTodosLosTurnos(): Promise<void> {
-    if (!confirm('¿Estás seguro de que querés borrar todos los turnos agendados?')) return;
+    if (!(await this.aviso.confirmar('¿Estás seguro de que querés borrar todos los turnos agendados?'))) return;
     try {
       await this.turnosSvc.eliminarVarios(this.listaTurnos());
       await this.cargarTurnos();
     } catch (e) {
       console.error(e);
-      alert('No se pudieron borrar los turnos.');
+      this.aviso.error('No se pudieron borrar los turnos.');
     }
   }
 }

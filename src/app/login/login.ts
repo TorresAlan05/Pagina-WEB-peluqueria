@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Registros } from '../templates/templates';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 import { TurnosService } from '../services/turnos.service';
+import { AvisoService } from '../services/aviso.service';
 
 @Component({
   selector: 'app-login',
@@ -12,6 +13,7 @@ import { TurnosService } from '../services/turnos.service';
   styleUrl: './login.css',
 })
 export class Login {
+  private aviso = inject(AvisoService);
   miLogin: Registros;
   cargando = false;
 
@@ -26,7 +28,7 @@ export class Login {
     try {
       await this.auth.login(this.miLogin.mail.trim(), this.miLogin.contra);
     } catch (e) {
-      alert(this.auth.traducirError(e));
+      this.aviso.error(this.auth.traducirError(e));
       this.cargando = false;
       return;
     }

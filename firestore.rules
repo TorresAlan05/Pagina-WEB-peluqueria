@@ -60,5 +60,23 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
     }
+        // Comentarios públicos: los lee cualquiera, escribe quien tenga sesión.
+    // Borra el autor o el admin. Máximo 300 caracteres.
+    match /comentarios/{id} {
+      allow read: if true;
+
+      allow create: if signedIn()
+                    && request.resource.data.keys().hasOnly(['uid', 'nombre', 'texto', 'creadoEn'])
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.nombre is string
+                    && request.resource.data.nombre.size() <= 80
+                    && request.resource.data.texto is string
+                    && request.resource.data.texto.size() > 0
+                    && request.resource.data.texto.size() <= 300
+                    && request.resource.data.creadoEn == request.time;
+
+      allow update: if false;
+      allow delete: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
   }
 }

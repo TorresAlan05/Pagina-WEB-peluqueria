@@ -12,6 +12,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth.service';
 import { ApiError, TurnosService } from '../services/turnos.service';
 import { Peluquero, UsuariosService } from '../services/usuarios.service';
+import { AvisoService } from '../services/aviso.service';
 
 // Solo lunes a viernes
 function diaHabil(control: AbstractControl): ValidationErrors | null {
@@ -29,6 +30,7 @@ function diaHabil(control: AbstractControl): ValidationErrors | null {
   styleUrls: ['./turno.css']
 })
 export class Turno implements OnInit {
+  private aviso = inject(AvisoService);
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private auth = inject(AuthService);
@@ -84,7 +86,7 @@ export class Turno implements OnInit {
       this.listaServicios.set((await this.turnosSvc.listarServicios()).map((s) => s.nombre));
     } catch (e) {
       console.error(e);
-      alert(e instanceof Error ? e.message : 'No se pudieron cargar los servicios.');
+      this.aviso.error(e instanceof Error ? e.message : 'No se pudieron cargar los servicios.');
     }
   }
 
@@ -93,7 +95,7 @@ export class Turno implements OnInit {
       this.listaPeluqueros.set(await this.usuariosSvc.listarPeluqueros());
     } catch (e) {
       console.error(e);
-      alert('No se pudo cargar la lista de peluqueros. ¿Publicaste las reglas de Firestore?');
+      this.aviso.error('No se pudo cargar la lista de peluqueros. ¿Publicaste las reglas de Firestore?');
     } finally {
       this.cargandoPeluqueros.set(false);
     }
@@ -141,7 +143,7 @@ export class Turno implements OnInit {
       return;
     }
     if (!this.perfilCompleto()) {
-      alert('Tu cuenta no tiene nombre y apellido cargados.');
+      this.aviso.error('Tu cuenta no tiene nombre y apellido cargados.');
       return;
     }
 
@@ -167,7 +169,7 @@ export class Turno implements OnInit {
         hora,
         observaciones: (observaciones ?? '').trim()
       });
-      alert('¡Turno agendado con éxito!');
+      this.aviso.exito('¡Turno agendado con éxito!');
       this.router.navigate(['/mis-turnos']);
     } catch (e) {
       console.error(e);
@@ -175,7 +177,7 @@ export class Turno implements OnInit {
         // Si dos personas reservan a la vez, el servidor rechaza al segundo
         this.horaTomada(await this.obtenerHorasOcupadas(dia, peluquero));
       } else {
-        alert(e instanceof Error ? e.message : 'No se pudo reservar el turno.');
+        this.aviso.error(e instanceof Error ? e.message : 'No se pudo reservar el turno.');
       }
     } finally {
       this.enviando.set(false);
@@ -183,7 +185,7 @@ export class Turno implements OnInit {
   }
 
   private horaTomada(ocupadas: string[]): void {
-    alert('No se pudo reservar: ese horario ya fue tomado. Elegí otro, por favor.');
+    this.aviso.error('No se pudo reservar: ese horario ya fue tomado. Elegí otro, por favor.');
     this.horasOcupadas.set(ocupadas);
     this.formTurno.get('hora')!.setValue('');
   }

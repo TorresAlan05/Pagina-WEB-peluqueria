@@ -6,6 +6,7 @@ import { EstadoDirective } from '../shared/estado.directive';
 import { FiltroTurnosPipe } from '../shared/filtro-turnos.pipe';
 import { FiltrosTurnos } from '../shared/filtros-turnos/filtros-turnos';
 import { descargarCsv } from '../shared/csv';
+import { AvisoService } from '../services/aviso.service';
 
 @Component({
   selector: 'app-admin',
@@ -18,6 +19,7 @@ export class Admin implements OnInit {
   private router = inject(Router);
   private auth = inject(AuthService);
   private turnosSvc = inject(TurnosService);
+  private aviso = inject(AvisoService);
 
   readonly estados = ESTADOS;
 
@@ -71,7 +73,7 @@ export class Admin implements OnInit {
       this.listaTurnos.update((l) => l.map((t) => (t.id === turno.id ? { ...t, estado: nuevo } : t)));
     } catch (e) {
       console.error(e);
-      alert(e instanceof Error ? e.message : 'No se pudo cambiar el estado.');
+      this.aviso.error(e instanceof Error ? e.message : 'No se pudo cambiar el estado.');
       // se recarga para que el selector vuelva al valor real
       await this.cargarTurnos();
     } finally {
@@ -80,7 +82,7 @@ export class Admin implements OnInit {
   }
 
   async eliminarTurno(turno: Turno): Promise<void> {
-    const ok = confirm(
+    const ok = await this.aviso.confirmar(
       `¿Eliminar el turno de ${turno.nombre} ${turno.apellido} (${this.formatearDia(turno.dia)} ${turno.hora})?`
     );
     if (!ok) return;
@@ -91,7 +93,7 @@ export class Admin implements OnInit {
       this.listaTurnos.update((l) => l.filter((t) => t.id !== turno.id));
     } catch (e) {
       console.error(e);
-      alert('No se pudo eliminar el turno.');
+      this.aviso.error('No se pudo eliminar el turno.');
     } finally {
       this.procesando.set(null);
     }
