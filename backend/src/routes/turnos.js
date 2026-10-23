@@ -48,16 +48,28 @@ export function turnosRouter(pool, { exigirLogin, obtenerPeluquero }) {
     const [rows] = await pool.query(`${SELECT} WHERE t.id = ?`, [id]);
     return rows[0] ?? null;
   };
-  // Un cliente (o peluquero) solo toca sus turnos; el admin, todos
-  const puedeTocar = (req, fila) => req.usuario.rol === 'admin' || fila.usuario_uid === req.usuario.uid;
+    // Modificar o borrar: el admin (todos) o el cliente (solo los suyos). El peluquero solo mira.
+  const puedeTocar = (req, fila) =>
+    req.usuario.rol === 'admin' || (req.usuario.rol === 'cliente' && fila.usuario_uid === req.usuario.uid);
+  // Ver un turno: además, el peluquero ve los que le asignaron a él
+  const puedeVer = (req, fila) =>
+    puedeTocar(req, fila) || (req.usuario.rol === 'peluquero' && fila.peluquero_uid === req.usuario.uid);
 
   // Admin: todos los turnos (o solo los suyos con ?mios=true). Los demás: siempre solo los suyos.
+    // Admin: todos (o solo los suyos con ?mios=true). Peluquero: solo los que le asignaron.
+  // Cliente: solo los suyos.
   r.get('/', async (req, res) => {
-    const verTodos = req.usuario.rol === 'admin' && req.query.mios !== 'true';
-    const [rows] = await pool.query(
-      `${SELECT} ${verTodos ? '' : 'WHERE t.usuario_uid = ?'} ORDER BY t.dia, t.hora`,
-      verTodos ? [] : [req.usuario.uid]
-    );
+    const { rol, uid } = req.usuario;
+    let filtro = '';
+    let params = [];
+    if (rol === 'peluquero') {
+      filtro = 'WHERE t.peluquero_uid = ?';
+      params = [uid];
+    } else if (rol !== 'admin' || req.query.mios === 'true') {
+      filtro = 'WHERE t.usuario_uid = ?';
+      params = [uid];
+    }
+    const [rows] = await pool.query(`${SELECT} ${filtro} ORDER BY t.dia, t.hora`, params);
     res.json(rows.map(mapTurno));
   });
 
@@ -76,16 +88,19 @@ export function turnosRouter(pool, { exigirLogin, obtenerPeluquero }) {
     res.json(rows.map((x) => ({ hora: String(x.hora).slice(0, 5), turnoId: x.id })));
   });
 
-  r.get('/:id', async (req, res) => {
+    r.get('/:id', async (req, res) => {
     const id = idValido(req.params.id);
     if (!id) return res.status(400).json({ error: 'Id inválido.' });
     const fila = await buscar(id);
     if (!fila) return res.status(404).json({ error: 'Turno no encontrado.' });
-    if (!puedeTocar(req, await filaConUid(pool, id))) return res.status(403).json({ error: 'No es tu turno.' });
+    if (!puedeVer(req, await filaConUid(pool, id))) return res.status(403).json({ error: 'No es tu turno.' });
     res.json(mapTurno(fila));
   });
 
   r.post('/', async (req, res) => {
+    if (req.usuario.rol === 'peluquero') {
+      return res.status(403).json({ error: 'Los peluqueros no reservan turnos.' });
+    }
     const b = req.body ?? {};
     const nombre = textoValido(b.nombre, 60);
     const apellido = textoValido(b.apellido, 60);
@@ -181,8 +196,7 @@ export function turnosRouter(pool, { exigirLogin, obtenerPeluquero }) {
   return r;
 }
 
-// El uid del dueño no se manda al front, por eso se consulta aparte
 async function filaConUid(pool, id) {
-  const [rows] = await pool.query('SELECT id, usuario_uid FROM turnos WHERE id = ?', [id]);
+  const [rows] = await pool.query('SELECT id, usuario_uid, peluquero_uid FROM turnos WHERE id = ?', [id]);
   return rows[0] ?? null;
 }

@@ -52,6 +52,7 @@
             <tr class="bg-neutral-950 text-neutral-400 text-xs uppercase tracking-wider border-b border-neutral-800">
               <th class="p-4 font-semibold">Cliente</th>
               <th class="p-4 font-semibold">Servicio</th>
+              <th class="p-4 font-semibold">Peluquero</th>
               <th class="p-4 font-semibold">Fecha y Hora</th>
               <th class="p-4 font-semibold text-center">Estado</th>
               <th class="p-4 font-semibold text-center">Acción</th>
@@ -70,6 +71,7 @@
                     <div class="text-xs text-neutral-500 italic mt-1">{{ turno.observaciones }}</div>
                   }
                 </td>
+                <td class="p-4 font-light">{{ turno.peluquero || '—' }}</td>
                 <td class="p-4">
                   <div class="font-normal text-white">{{ turno.hora }} hs</div>
                   <div class="text-xs text-neutral-500 capitalize">{{ nombreDia(turno.dia) }}, {{ formatearDia(turno.dia) }}</div>
@@ -96,7 +98,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="5" class="p-8 text-center text-neutral-500 italic">
+                <td colspan="6" class="p-8 text-center text-neutral-500 italic">
                   @if (cargando()) {
                     Cargando turnos...
                   } @else if (error()) {

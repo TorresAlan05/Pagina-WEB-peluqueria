@@ -2,19 +2,30 @@
   <div class="tarjeta tarjeta-media">
     <span class="sello">Mati &amp; Alan</span>
     <h2 class="titulo-tarjeta">Reservar turno</h2>
-    <p class="subtitulo">Atendemos de lunes a viernes. Elegí el servicio, el día y la hora.</p>
+    <p class="subtitulo">
+      @if (perfilCompleto()) {
+        Reservando como <strong>{{ nombreCompleto() }}</strong>. Atendemos de lunes a viernes.
+      } @else {
+        Atendemos de lunes a viernes.
+      }
+    </p>
+
+    <div *ngIf="!perfilCompleto()"
+         class="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 text-neutral-300 text-sm p-3">
+      Tu cuenta todavía no tiene nombre y apellido cargados, así que no se puede reservar.
+    </div>
 
     <form [formGroup]="formTurno" (ngSubmit)="onSubmit()" class="formulario">
 
-      <div class="fila-2">
-        <div>
-          <label class="etiqueta" for="nombre">Nombre</label>
-          <input id="nombre" class="campo" type="text" formControlName="nombre" placeholder="Nombre">
-        </div>
-        <div>
-          <label class="etiqueta" for="apellido">Apellido</label>
-          <input id="apellido" class="campo" type="text" formControlName="apellido" placeholder="Apellido">
-        </div>
+      <div>
+        <label class="etiqueta" for="peluquero">Peluquero</label>
+        <select id="peluquero" class="campo" formControlName="peluquero">
+          <option value="" disabled>Seleccione un peluquero</option>
+          <option *ngFor="let p of listaPeluqueros()" [value]="p.uid">{{ p.nombre }}</option>
+        </select>
+        <p *ngIf="!cargandoPeluqueros() && listaPeluqueros().length === 0" class="aviso-error">
+          Todavía no hay peluqueros disponibles. Probá más tarde.
+        </p>
       </div>
 
       <div>
@@ -50,7 +61,8 @@
                   placeholder="Algo que quieras que sepamos"></textarea>
       </div>
 
-      <button type="submit" class="btn btn-primario btn-bloque" [disabled]="formTurno.invalid || enviando()">
+      <button type="submit" class="btn btn-primario btn-bloque"
+              [disabled]="formTurno.invalid || enviando() || !perfilCompleto()">
         {{ enviando() ? 'Guardando...' : 'Agendar turno' }}
       </button>
     </form>

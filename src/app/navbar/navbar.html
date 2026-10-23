@@ -13,6 +13,8 @@
         <a routerLink="/admin-dashboard" [class]="enlace">Turnos</a>
         <a routerLink="/admin-servicios" [class]="enlace">Servicios</a>
         <a routerLink="/admin-usuarios" [class]="enlace">Usuarios</a>
+            } @else if (auth.rol() === 'peluquero') {
+        <a routerLink="/agenda" [class]="enlace">Mi agenda</a>
       } @else if (auth.rol() === 'cliente') {
         <button type="button" (click)="reservarTurno()" [class]="boton">Reservar Turno</button>
         <a routerLink="/mis-turnos" [class]="enlace">Mis Turnos</a>

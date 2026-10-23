@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService, Rol } from '../services/auth.service';
 import { Usuario, UsuariosService } from '../services/usuarios.service';
 import { EstadoDirective } from '../shared/estado.directive';
+import { TurnosService } from '../services/turnos.service';
 
 @Component({
   selector: 'app-usuarios',
@@ -15,8 +16,10 @@ export class Usuarios implements OnInit {
   private auth = inject(AuthService);
   private router = inject(Router);
   private svc = inject(UsuariosService);
+    private turnosSvc = inject(TurnosService);
+  readonly puedeEliminar = this.auth.esAdminPrincipal;
 
-  readonly roles: Rol[] = ['cliente', 'admin'];
+  readonly roles: Rol[] = ['cliente', 'peluquero'];
 
   usuarios = signal<Usuario[]>([]);
   busqueda = signal('');
@@ -26,12 +29,14 @@ export class Usuarios implements OnInit {
 
   miUid = computed(() => this.auth.user()?.uid ?? '');
 
-  filtrados = computed(() => {
+    filtrados = computed(() => {
     const q = this.busqueda().trim().toLowerCase();
-    return q ? this.usuarios().filter((u) => u.email.toLowerCase().includes(q)) : this.usuarios();
+    return q
+      ? this.usuarios().filter((u) => `${u.nombre} ${u.email}`.toLowerCase().includes(q))
+      : this.usuarios();
   });
 
-  totalAdmins = computed(() => this.usuarios().filter((u) => u.role === 'admin').length);
+  totalPeluqueros = computed(() => this.usuarios().filter((u) => u.role === 'peluquero').length);
 
   async ngOnInit(): Promise<void> {
     await this.auth.ready;
@@ -57,6 +62,7 @@ export class Usuarios implements OnInit {
 
   async cambiarRol(u: Usuario, valor: string): Promise<void> {
     const nuevo = valor as Rol;
+    if (u.role === 'admin') return; // el administrador es único y no se modifica
     if (!this.roles.includes(nuevo) || nuevo === u.role) return;
 
     // Evita sacarse el rol uno mismo y quedarse sin administradores
@@ -78,6 +84,24 @@ export class Usuarios implements OnInit {
       console.error(e);
       alert('No se pudo cambiar el rol.');
       await this.cargar();
+    } finally {
+      this.procesando.set(null);
+    }
+  }
+    async eliminar(u: Usuario): Promise<void> {
+    if (u.role === 'admin' || u.uid === this.miUid()) return;
+    const ok = confirm(
+      `¿Eliminar la cuenta de ${u.nombre || u.email}?\n\nSe borran su acceso, su perfil y sus turnos. No se puede deshacer.`
+    );
+    if (!ok) return;
+
+    this.procesando.set(u.uid);
+    try {
+      await this.turnosSvc.eliminarCuenta(u.uid);
+      this.usuarios.update((l) => l.filter((x) => x.uid !== u.uid));
+    } catch (e) {
+      console.error(e);
+      alert(e instanceof Error ? e.message : 'No se pudo eliminar la cuenta.');
     } finally {
       this.procesando.set(null);
     }

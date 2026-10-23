@@ -11,7 +11,13 @@ import {
 import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'firebase/firestore';
 import { firebaseConfig } from '../firebase.config';
 
-export type Rol = 'admin' | 'cliente';
+export type Rol = 'admin' | 'peluquero' | 'cliente';
+export const ADMIN_EMAIL = 'admin@peluqueria.com';
+
+/** Convierte lo guardado en Firestore en un rol válido (ante la duda, el de menos privilegios). */
+export function aRol(valor: unknown): Rol {
+  return valor === 'admin' || valor === 'peluquero' ? valor : 'cliente';
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -23,15 +29,26 @@ export class AuthService {
   readonly user = signal<User | null>(null);
   /** Rol del usuario actual, leído de Firestore (users/{uid}.role). */
   readonly rol = signal<Rol | null>(null);
+  /** Nombre y apellido del perfil (users/{uid}). Vacíos en cuentas viejas que no los cargaron. */
+  readonly nombre = signal('');
+  readonly apellido = signal('');
 
   readonly email = computed(() => this.user()?.email ?? null);
   readonly isAdmin = computed(() => this.rol() === 'admin');
+  readonly isPeluquero = computed(() => this.rol() === 'peluquero');
+    /** Solo el administrador principal elimina cuentas (el servidor lo vuelve a comprobar). */
+  readonly esAdminPrincipal = computed(
+    () => this.rol() === 'admin' && this.email()?.toLowerCase() === ADMIN_EMAIL
+  );
+  readonly nombreCompleto = computed(() => `${this.nombre()} ${this.apellido()}`.trim());
 
   /** Se resuelve cuando Firebase restauró la sesión Y se cargó el rol. */
   readonly ready: Promise<void>;
 
   // Evita leer/crear dos veces el mismo perfil si se llama a la vez
   private enCurso = new Map<string, Promise<Rol>>();
+  // Nombre y apellido del formulario de registro, hasta que se crea el perfil en Firestore
+  private datosRegistro: { nombre: string; apellido: string } | null = null;
 
   constructor() {
     this.ready = new Promise<void>((resolve) => {
@@ -43,10 +60,15 @@ export class AuthService {
     });
   }
 
-  async register(email: string, password: string): Promise<void> {
-    const cred = await createUserWithEmailAndPassword(this.auth, email, password);
-    this.user.set(cred.user);
-    this.rol.set(await this.cargarRol(cred.user));
+  async register(nombre: string, apellido: string, email: string, password: string): Promise<void> {
+    this.datosRegistro = { nombre: nombre.trim(), apellido: apellido.trim() };
+    try {
+      const cred = await createUserWithEmailAndPassword(this.auth, email, password);
+      this.user.set(cred.user);
+      this.rol.set(await this.cargarRol(cred.user));
+    } finally {
+      this.datosRegistro = null;
+    }
   }
 
   async login(email: string, password: string): Promise<void> {
@@ -59,15 +81,17 @@ export class AuthService {
     await signOut(this.auth);
     this.user.set(null);
     this.rol.set(null);
+    this.nombre.set('');
+    this.apellido.set('');
   }
 
   /** Token (JWT) del usuario para mandarlo al backend. Firebase lo renueva solo si venció. */
-   async obtenerToken(): Promise<string> {
-     const u = this.auth.currentUser;
-     if (!u) throw new Error('No hay una sesión iniciada.');
-     return u.getIdToken();
-   }
-   
+  async obtenerToken(): Promise<string> {
+    const u = this.auth.currentUser;
+    if (!u) throw new Error('No hay una sesión iniciada.');
+    return u.getIdToken();
+  }
+
   private cargarRol(u: User): Promise<Rol> {
     let p = this.enCurso.get(u.uid);
     if (!p) {
@@ -77,15 +101,23 @@ export class AuthService {
     return p;
   }
 
-  /** Lee users/{uid}. Si no existe (primer ingreso), lo crea como 'cliente'. */
+  /** Lee users/{uid}. Si no existe (primer ingreso), lo crea como 'cliente' con su nombre y apellido. */
   private async leerOCrearPerfil(u: User): Promise<Rol> {
     try {
       const ref = doc(this.db, 'users', u.uid);
       const snap = await getDoc(ref);
       if (snap.exists()) {
-        return snap.data()['role'] === 'admin' ? 'admin' : 'cliente';
+        const d = snap.data();
+        this.nombre.set((d['nombre'] as string) ?? '');
+        this.apellido.set((d['apellido'] as string) ?? '');
+        return aRol(d['role']);
       }
-      await setDoc(ref, { email: u.email, role: 'cliente', creadoEn: serverTimestamp() });
+
+      const nombre = this.datosRegistro?.nombre ?? '';
+      const apellido = this.datosRegistro?.apellido ?? '';
+      await setDoc(ref, { email: u.email, role: 'cliente', nombre, apellido, creadoEn: serverTimestamp() });
+      this.nombre.set(nombre);
+      this.apellido.set(apellido);
       return 'cliente';
     } catch (e) {
       // Ante cualquier error se asume el rol de menos privilegios

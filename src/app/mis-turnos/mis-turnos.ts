@@ -113,13 +113,13 @@ export class MisTurnos implements OnInit {
     return diaSemana === 0 || diaSemana === 6;
   }
 
-  // Horas ocupadas en una fecha por otros turnos (se ignora el que se está editando)
+    // Horas ocupadas en una fecha con el peluquero del turno (se ignora el turno que se está editando)
   private async obtenerHorasOcupadas(fecha: string, indiceIgnorado: number): Promise<string[]> {
     if (!fecha) return [];
-    const idIgnorado = this.listaTurnos()[indiceIgnorado]?.id;
+    const turno = this.listaTurnos()[indiceIgnorado];
     try {
-      const ocupadas = await this.turnosSvc.horasOcupadas(fecha);
-      return ocupadas.filter((o) => o.turnoId !== idIgnorado).map((o) => o.hora);
+      const ocupadas = await this.turnosSvc.horasOcupadas(fecha, turno?.peluquero_uid);
+      return ocupadas.filter((o) => o.turnoId !== turno?.id).map((o) => o.hora);
     } catch (e) {
       console.error(e);
       return [];

@@ -17,6 +17,8 @@ export interface Turno {
   estado: EstadoTurno;
   observaciones?: string;
   precio?: number;
+  peluquero_uid?: string | null;
+  peluquero?: string | null;
 }
 
 /** Datos que carga el cliente al reservar. El estado siempre arranca en Pendiente. */
@@ -108,12 +110,13 @@ export class TurnosService {
     return this.pedir<void>('DELETE', `/servicios/${id}`);
   }
 
-  /** Reserva un turno. Si el horario ya fue tomado, lanza ApiError con status 409. */
+    /** Reserva un turno. Si el horario ya fue tomado, lanza ApiError con status 409. */
   async crear(datos: NuevoTurno): Promise<void> {
     await this.pedir('POST', '/turnos', {
       nombre: datos.nombre,
       apellido: datos.apellido,
       servicio: datos.servicio,
+      peluquero_uid: datos.peluquero_uid,
       dia: datos.dia,
       hora: datos.hora,
       observaciones: datos.observaciones ?? ''
@@ -129,14 +132,18 @@ export class TurnosService {
   async listarMios(_uid?: string): Promise<Turno[]> {
     return (await this.pedir<TurnoApi[]>('GET', '/turnos?mios=true')).map((t) => this.aTurno(t));
   }
+    /** Turnos asignados al peluquero que inició sesión (el servidor solo le devuelve esos). */
+  async listarAgenda(): Promise<Turno[]> {
+    return (await this.pedir<TurnoApi[]>('GET', '/turnos')).map((t) => this.aTurno(t));
+  }
 
-  /** Horas ya tomadas en una fecha (de todos los clientes). */
-  async horasOcupadas(dia: string): Promise<HoraOcupada[]> {
+    /** Horas ya tomadas en una fecha para un peluquero. */
+  async horasOcupadas(dia: string, peluqueroUid?: string | null): Promise<HoraOcupada[]> {
     if (!dia) return [];
-    const lista = await this.pedir<{ hora: string; turnoId: number }[]>(
-      'GET',
-      `/turnos/ocupados?dia=${encodeURIComponent(dia)}`
-    );
+    const params =
+      `dia=${encodeURIComponent(dia)}` +
+      (peluqueroUid ? `&peluquero=${encodeURIComponent(peluqueroUid)}` : '');
+    const lista = await this.pedir<{ hora: string; turnoId: number }[]>('GET', `/turnos/ocupados?${params}`);
     return lista.map((o) => ({ hora: o.hora, turnoId: String(o.turnoId) }));
   }
 
@@ -163,5 +170,9 @@ export class TurnosService {
     const resultados = await Promise.allSettled(turnos.map((t) => this.eliminar(t)));
     const fallo = resultados.find((r): r is PromiseRejectedResult => r.status === 'rejected');
     if (fallo) throw fallo.reason;
+  }
+    /** Elimina una cuenta (login, perfil y turnos). Solo el admin; lo exige el servidor. */
+  eliminarCuenta(uid: string): Promise<void> {
+    return this.pedir<void>('DELETE', `/usuarios/${encodeURIComponent(uid)}`);
   }
 }

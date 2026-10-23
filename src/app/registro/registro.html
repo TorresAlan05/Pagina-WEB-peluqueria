@@ -5,6 +5,18 @@
     <p class="subtitulo">Registrate para reservar tu turno online.</p>
 
     <form (ngSubmit)="ClickRegistros()" class="formulario">
+      <div class="fila-2">
+        <div>
+          <label class="etiqueta" for="nombre">Nombre</label>
+          <input id="nombre" class="campo" type="text" [(ngModel)]="miRegistro.nombre" name="nombre"
+                 placeholder="Nombre" autocomplete="given-name" maxlength="60" required>
+        </div>
+        <div>
+          <label class="etiqueta" for="apellido">Apellido</label>
+          <input id="apellido" class="campo" type="text" [(ngModel)]="miRegistro.apellido" name="apellido"
+                 placeholder="Apellido" autocomplete="family-name" maxlength="60" required>
+        </div>
+      </div>
       <div>
         <label class="etiqueta" for="mail">Email</label>
         <input id="mail" class="campo" type="email" [(ngModel)]="miRegistro.mail" name="mail"

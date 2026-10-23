@@ -1,6 +1,7 @@
 import { Directive, computed, input } from '@angular/core';
 
 const TONOS: Record<string, string> = {
+  peluquero: 'text-emerald-400 border-emerald-500/30',
   Finalizado: 'text-emerald-400 border-emerald-500/30',
   Pendiente: 'text-amber-500 border-amber-500/30',
   admin: 'text-amber-500 border-amber-500/30',

@@ -112,12 +112,13 @@ export class Admin implements OnInit {
     exportarCsv(turnos: Turno[]): void {
     descargarCsv(
       'turnos.csv',
-      ['ID', 'Cliente', 'Mail', 'Servicio', 'Precio (ARS)', 'Fecha', 'Hora', 'Estado', 'Observaciones'],
+      ['ID', 'Cliente', 'Mail', 'Servicio', 'Peluquero', 'Precio (ARS)', 'Fecha', 'Hora', 'Estado', 'Observaciones'],
       turnos.map((t) => [
         t.id,
         `${t.nombre} ${t.apellido}`,
         t.mail,
         t.servicio,
+        t.peluquero ?? '',
         t.precio,
         this.formatearDia(t.dia),
         t.hora,

@@ -2,8 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import { serviciosRouter } from './routes/servicios.js';
 import { turnosRouter } from './routes/turnos.js';
+import { usuariosRouter } from './routes/usuarios.js';
+import { crearCuentasFirebase } from './cuentas.js';
 
-export function crearApp({ pool, auth, corsOrigins }) {
+export function crearApp({ pool, auth, corsOrigins, cuentas = crearCuentasFirebase() }) {
   const app = express();
 
   app.use(cors({ origin: corsOrigins }));
@@ -26,6 +28,7 @@ export function crearApp({ pool, auth, corsOrigins }) {
   });
   app.use('/api/servicios', serviciosRouter(pool, auth));
   app.use('/api/turnos', turnosRouter(pool, auth));
+  app.use('/api/usuarios', usuariosRouter(pool, auth, cuentas));
 
   app.use((_req, res) => res.status(404).json({ error: 'Ruta no encontrada.' }));
 

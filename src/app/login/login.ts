@@ -36,6 +36,10 @@ export class Login {
       this.router.navigateByUrl('admin-dashboard');
       return;
     }
+        if (this.auth.isPeluquero()) {
+      this.router.navigateByUrl('agenda');
+      return;
+    }
 
     // Cliente: si ya tiene turnos va a verlos, si no a reservar uno
     let tieneTurnos = false;

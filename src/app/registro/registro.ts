@@ -18,9 +18,13 @@ export class Registro {
     this.miRegistro = new Registros();
   }
 
-  async ClickRegistros() {
+    async ClickRegistros() {
     if (this.cargando) return;
 
+    if (!this.miRegistro.nombre.trim() || !this.miRegistro.apellido.trim()) {
+      alert('Completá tu nombre y apellido.');
+      return;
+    }
     if (this.miRegistro.contra !== this.miRegistro.contra2) {
       alert('Las contraseñas no coinciden.');
       return;
@@ -32,8 +36,13 @@ export class Registro {
 
     this.cargando = true;
     try {
-      // Firebase crea el usuario y deja la sesión iniciada
-      await this.auth.register(this.miRegistro.mail.trim(), this.miRegistro.contra);
+      // Firebase crea el usuario, guarda nombre y apellido en su perfil y deja la sesión iniciada
+      await this.auth.register(
+        this.miRegistro.nombre,
+        this.miRegistro.apellido,
+        this.miRegistro.mail.trim(),
+        this.miRegistro.contra
+      );
     } catch (e) {
       alert(this.auth.traducirError(e));
       this.cargando = false;

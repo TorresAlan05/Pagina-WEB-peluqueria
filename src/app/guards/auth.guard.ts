@@ -25,6 +25,8 @@ export const roleGuard = (roles: Rol[]): CanActivateFn => {
     if (!auth.user() || !rol) return router.createUrlTree(['/login']);
     if (roles.includes(rol)) return true;
 
-    return router.createUrlTree([rol === 'admin' ? '/admin-dashboard' : '/mis-turnos']);
+        return router.createUrlTree([
+      rol === 'admin' ? '/admin-dashboard' : rol === 'peluquero' ? '/agenda' : '/mis-turnos'
+    ]);
   };
 };

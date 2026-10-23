@@ -1,4 +1,6 @@
 export class Registros{
+    nombre: string = "";
+    apellido: string = "";
     mail: string = "";
     contra: string = "";
     contra2: string = "";

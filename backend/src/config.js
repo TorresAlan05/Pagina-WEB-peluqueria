@@ -17,6 +17,10 @@ export const config = {
     poolSize: Number(process.env.DB_POOL_SIZE ?? 10)
   },
   firebaseProjectId: process.env.FIREBASE_PROJECT_ID ?? 'peluqueria-maty-alan',
+    // Único administrador: es el único que puede eliminar cuentas
+  adminEmail: (process.env.ADMIN_EMAIL ?? 'admin@peluqueria.com').trim().toLowerCase(),
+  // JSON de la cuenta de servicio de Firebase (solo hace falta para eliminar cuentas)
+  firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT,
   corsOrigins: (process.env.CORS_ORIGINS ??
     'http://localhost:4200,https://peluqueria-maty-alan.web.app,https://peluqueria-maty-alan.firebaseapp.com')
     .split(',').map((s) => s.trim()).filter(Boolean)

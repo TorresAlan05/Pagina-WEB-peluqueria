@@ -57,6 +57,7 @@
             <div class="turno-info">
               <h3>{{ turno.nombre }} {{ turno.apellido }}</h3>
               <span class="chip">{{ turno.servicio }}</span>
+              <p *ngIf="turno.peluquero" class="turno-dato">Con {{ turno.peluquero }}</p>
               <span [appEstado]="turno.estado"
                     class="inline-block w-fit border rounded-full px-3 py-0.5 text-xs font-semibold">
                 {{ turno.estado }}
