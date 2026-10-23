@@ -3,6 +3,7 @@ import { esFechaValida, idValido, textoValido, validarDiaHora } from '../validac
 
 const SELECT = `
   SELECT t.id, t.usuario_uid AS uid, t.mail, t.nombre, t.apellido, t.servicio_id, s.nombre AS servicio, s.precio,
+         t.peluquero_uid, t.peluquero_nombre,
          t.dia, t.hora, t.estado, t.observaciones, t.creado_en
   FROM turnos t JOIN servicios s ON s.id = t.servicio_id`;
 
@@ -15,6 +16,8 @@ const mapTurno = (r) => ({
   servicio_id: r.servicio_id,
   servicio: r.servicio,
   precio: Number(r.precio),
+  peluquero_uid: r.peluquero_uid ?? null,
+  peluquero: r.peluquero_nombre ?? null,
   dia: r.dia,                       // "2026-10-21"
   hora: String(r.hora).slice(0, 5), // "10:00"
   estado: r.estado,
@@ -37,7 +40,7 @@ async function resolverServicio(pool, b) {
   return rows[0]?.id ?? null;
 }
 
-export function turnosRouter(pool, { exigirLogin }) {
+export function turnosRouter(pool, { exigirLogin, obtenerPeluquero }) {
   const r = Router();
   r.use(exigirLogin); // todo lo de turnos requiere sesión
 
@@ -45,10 +48,10 @@ export function turnosRouter(pool, { exigirLogin }) {
     const [rows] = await pool.query(`${SELECT} WHERE t.id = ?`, [id]);
     return rows[0] ?? null;
   };
-  // Un cliente solo toca sus turnos; el admin, todos
+  // Un cliente (o peluquero) solo toca sus turnos; el admin, todos
   const puedeTocar = (req, fila) => req.usuario.rol === 'admin' || fila.usuario_uid === req.usuario.uid;
 
-  // Admin: todos los turnos (o solo los suyos con ?mios=true). Cliente: siempre solo los suyos.
+  // Admin: todos los turnos (o solo los suyos con ?mios=true). Los demás: siempre solo los suyos.
   r.get('/', async (req, res) => {
     const verTodos = req.usuario.rol === 'admin' && req.query.mios !== 'true';
     const [rows] = await pool.query(
@@ -58,11 +61,18 @@ export function turnosRouter(pool, { exigirLogin }) {
     res.json(rows.map(mapTurno));
   });
 
-  // Horas ya reservadas en un día (para deshabilitarlas en el formulario)
+  // Horas ya reservadas en un día CON UN PELUQUERO (para deshabilitarlas en el formulario)
   r.get('/ocupados', async (req, res) => {
     const dia = req.query.dia;
     if (!esFechaValida(dia)) return res.status(400).json({ error: 'Falta ?dia=AAAA-MM-DD.' });
-    const [rows] = await pool.query('SELECT id, hora FROM turnos WHERE dia = ? ORDER BY hora', [dia]);
+
+    const peluquero = typeof req.query.peluquero === 'string' ? req.query.peluquero : '';
+    if (!peluquero) return res.json([]); // sin peluquero elegido no hay horarios tomados que mostrar
+
+    const [rows] = await pool.query(
+      'SELECT id, hora FROM turnos WHERE dia = ? AND peluquero_uid = ? ORDER BY hora',
+      [dia, peluquero]
+    );
     res.json(rows.map((x) => ({ hora: String(x.hora).slice(0, 5), turnoId: x.id })));
   });
 
@@ -88,11 +98,21 @@ export function turnosRouter(pool, { exigirLogin }) {
     const servicioId = await resolverServicio(pool, b);
     if (!servicioId) return res.status(400).json({ error: 'Elegí un servicio que exista.' });
 
+    // El peluquero tiene que existir y tener ese rol en Firestore (el nombre lo toma el servidor de ahí)
+    const peluqueroUid = textoValido(b.peluquero_uid, 128);
+    if (!peluqueroUid) return res.status(400).json({ error: 'Elegí un peluquero.' });
+    const peluquero = await obtenerPeluquero(peluqueroUid, req.token);
+    if (!peluquero) return res.status(400).json({ error: 'Ese peluquero no está disponible.' });
+
     try {
       const [ins] = await pool.query(
-        `INSERT INTO turnos (usuario_uid, mail, nombre, apellido, servicio_id, dia, hora, observaciones)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [req.usuario.uid, req.usuario.email ?? '', nombre, apellido, servicioId, b.dia, b.hora, obs || null]
+        `INSERT INTO turnos
+           (usuario_uid, mail, nombre, apellido, servicio_id, peluquero_uid, peluquero_nombre, dia, hora, observaciones)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          req.usuario.uid, req.usuario.email ?? '', nombre, apellido, servicioId,
+          peluquero.uid, peluquero.nombre.slice(0, 121), b.dia, b.hora, obs || null
+        ]
       );
       res.status(201).json(mapTurno(await buscar(ins.insertId)));
     } catch (e) {
@@ -119,7 +139,7 @@ export function turnosRouter(pool, { exigirLogin }) {
     const obs = b.observaciones === undefined
       ? (actual.observaciones ?? '')
       : (typeof b.observaciones === 'string' ? b.observaciones.trim().slice(0, 500) : '');
-    // Solo el admin cambia el estado; si un cliente lo manda, se ignora
+    // Solo el admin cambia el estado; si otro lo manda, se ignora
     const estado = req.usuario.rol === 'admin' && b.estado !== undefined ? b.estado : actual.estado;
 
     if (!nombre || !apellido) return res.status(400).json({ error: 'Nombre y apellido no son válidos.' });

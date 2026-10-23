@@ -10,27 +10,37 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Perfil de usuario: cada uno lee el suyo; el admin lee y modifica todos.
-    // Al registrarse solo se puede crear como 'cliente' (nadie se hace admin solo).
+    // Perfil de usuario.
+    //  - Cada uno lee el suyo, el admin lee todos y cualquier usuario con sesión puede ver a los peluqueros.
+    //  - Al registrarse solo se puede crear como 'cliente'.
+    //  - ÚNICO ADMIN: solo el admin cambia roles, solo a 'cliente' o 'peluquero', y nadie puede tocar al admin.
     match /users/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow read: if signedIn()
+                  && (request.auth.uid == uid || isAdmin() || resource.data.role == 'peluquero');
+
       allow create: if signedIn() && request.auth.uid == uid
-                    && request.resource.data.role == 'cliente';
-      allow update, delete: if isAdmin();
+                    && request.resource.data.role == 'cliente'
+                    && request.resource.data.keys().hasOnly(['email', 'role', 'nombre', 'apellido', 'creadoEn'])
+                    && request.resource.data.get('nombre', '').size() <= 60
+                    && request.resource.data.get('apellido', '').size() <= 60;
+
+      allow update: if isAdmin()
+                    && resource.data.role != 'admin'
+                    && request.resource.data.role in ['cliente', 'peluquero']
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']);
+
+      allow delete: if isAdmin() && resource.data.role != 'admin';
     }
 
-    // Turnos
+    // Turnos (reglas heredadas de cuando se guardaban en Firestore; hoy van por la API)
     match /turnos/{id} {
       allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
 
-      // El cliente crea sus turnos, siempre como 'Pendiente' y con su propio mail
       allow create: if signedIn()
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.mail == request.auth.token.email
                     && request.resource.data.estado == 'Pendiente';
 
-      // El admin puede todo (incluido el estado).
-      // El cliente puede editar su turno PERO NO el estado, uid ni mail.
       allow update: if isAdmin()
                     || (signedIn()
                         && resource.data.uid == request.auth.uid
@@ -41,7 +51,6 @@ service cloud.firestore {
       allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
 
-    // "Candados" de horario: el id (dia_hora) es único, así no se pisan reservas.
     match /ocupados/{slot} {
       allow read: if signedIn();
       allow create: if signedIn()
